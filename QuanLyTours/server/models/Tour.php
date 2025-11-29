@@ -139,5 +139,11 @@ class Tour {
         if ($stmt->execute()) return true;
         return false;
     }
+
+    public function getGallery($tour_id) {
+        $stmt = $this->conn->prepare("SELECT * FROM tour_gallery WHERE tour_id = :id");
+        $stmt->execute([':id' => $tour_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
 ?>

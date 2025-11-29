@@ -17,6 +17,17 @@ class GuideController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $database = new Database();
             $db = $database->getConnection();
+            $name = trim($_POST['full_name']);
+            $phone = trim($_POST['phone']);
+            
+            if(empty($name) || empty($phone)) {
+                echo "<script>alert('Tên và SĐT Hướng dẫn viên là bắt buộc!'); window.history.back();</script>";
+                return;
+            }
+            if (!preg_match('/^[0-9]{9,11}$/', $phone)) {
+                echo "<script>alert('SĐT Hướng dẫn viên không hợp lệ!'); window.history.back();</script>";
+                return;
+            }
             $guideModel = new Guide($db);
             $imageName = "";
             if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
