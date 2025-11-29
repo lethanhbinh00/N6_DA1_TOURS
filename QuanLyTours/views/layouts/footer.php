@@ -1,7 +1,22 @@
-<?php require_once __DIR__ . '/../layouts/header.php'; ?>
+</div> <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-<div class="container-fluid p-4">
-    <h3 class="fw-bold text-secondary mb-4">👋 Xin chào, Admin!</h3>
-    </div>
+<script>
+    function toggleMenu(id) {
+        const el = document.getElementById(id);
+        
+        // Kiểm tra xem menu có tồn tại không trước khi thao tác
+        if (el) {
+            // Nếu đang hiện thì ẩn đi, nếu đang ẩn thì hiện lên
+            if (el.style.display === 'block') {
+                el.style.display = 'none';
+            } else {
+                el.style.display = 'block';
+            }
+        } else {
+            console.error("Không tìm thấy menu với ID: " + id);
+        }
+    }
+</script>
 
-<?php require_once __DIR__ . '/../layouts/footer.php'; ?>
+</body>
+</html>
