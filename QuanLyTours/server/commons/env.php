@@ -1,6 +1,6 @@
 <?php
 const DB_HOST = 'localhost';
-const DB_NAME = 'tours';
+const DB_NAME = 'travel_erp';
 const DB_USER = 'root';
 const DB_PASS = '';
 
@@ -14,3 +14,4 @@ try {
 } catch (Exception $e) {
     die('Lỗi kết nối DB: ' . $e->getMessage());
 }
+?>

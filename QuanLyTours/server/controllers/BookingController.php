@@ -5,11 +5,15 @@ require_once __DIR__ . '/../models/Tour.php';
 
 class BookingController {
 
+    // 1. Danh sách
     public function index() {
-        $db = (new Database())->getConnection();
-        $bookings = (new Booking($db))->getAll();
+        $database = new Database();
+        $db = $database->getConnection();
+        $bookingModel = new Booking($db);
         
-        // Xử lý dữ liệu null
+        $bookings = $bookingModel->getAll();
+        
+        // Xử lý dữ liệu null tránh lỗi View
         if (!empty($bookings)) {
             foreach ($bookings as $key => $value) {
                 $bookings[$key]['customer_id_card'] = $value['customer_id_card'] ?? ''; 
@@ -17,27 +21,34 @@ class BookingController {
                 $bookings[$key]['tour_code']        = $value['tour_code'] ?? 'N/A';     
                 $bookings[$key]['tour_name']        = $value['tour_name'] ?? 'Tour đã xóa';
                 $bookings[$key]['customer_name']    = $value['customer_name'] ?? 'Khách lẻ';
+                $bookings[$key]['deposit_amount']   = $value['deposit_amount'] ?? 0;
             }
         }
+        
         require_once __DIR__ . '/../../views/booking/index.php';
     }
 
+    // 2. Form tạo
     public function create() {
-        $db = (new Database())->getConnection();
+        $database = new Database();
+        $db = $database->getConnection();
         $tours = (new Tour($db))->getAll();
         require_once __DIR__ . '/../../views/booking/create.php';
     }
 
+    // 3. Lưu tạo
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->processForm('create');
         }
     }
 
+    // 4. Form sửa
     public function edit() {
         $id = $_GET['id'] ?? null;
         if ($id) {
-            $db = (new Database())->getConnection();
+            $database = new Database();
+            $db = $database->getConnection();
             $booking = (new Booking($db))->getById($id);
             $tours = (new Tour($db))->getAll();
 
@@ -46,12 +57,14 @@ class BookingController {
         }
     }
 
+    // 5. Lưu sửa
     public function update() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->processForm('update');
         }
     }
 
+    // 6. Đổi trạng thái
     public function status() {
         $id = $_GET['id'] ?? null;
         $status = $_GET['status'] ?? null;
@@ -62,6 +75,31 @@ class BookingController {
         }
     }
 
+    // 7. [MỚI] Xử lý Tiền cọc
+    public function deposit() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = $_POST['booking_id'];
+            $amount = $_POST['deposit_amount'];
+            $total = $_POST['total_price_hidden'];
+
+            // Validate: Tiền cọc không được lớn hơn tổng tiền
+            if ($amount > $total) {
+                echo "<script>alert('Lỗi: Tiền cọc không được lớn hơn Tổng tiền tour!'); window.history.back();</script>";
+                return;
+            }
+
+            $db = (new Database())->getConnection();
+            $result = (new Booking($db))->updateDeposit($id, $amount);
+
+            if ($result === "success") {
+                header("Location: index.php?action=booking-list&msg=deposit_success");
+            } else {
+                echo "Lỗi: " . $result;
+            }
+        }
+    }
+
+    // 8. Xóa
     public function delete() {
         $id = $_GET['id'] ?? null;
         if ($id) {
@@ -71,18 +109,17 @@ class BookingController {
         }
     }
 
-    // --- HÀM XỬ LÝ DỮ LIỆU & VALIDATE (ĐÃ SỬA ĐỂ HIỆN LỖI DƯỚI INPUT) ---
+    // --- HÀM PHỤ TRỢ ---
     private function processForm($mode) {
         $database = new Database();
         $db = $database->getConnection();
         $bookingModel = new Booking($db);
 
-        // 1. Lấy dữ liệu
         $data = [
             'tour_id'          => $_POST['tour_id'],
             'travel_date'      => $_POST['travel_date'],
             'customer_name'    => trim($_POST['customer_name']),
-            'customer_id_card' => trim($_POST['customer_id_card'] ?? ''),
+            'customer_id_card' => substr(trim($_POST['customer_id_card'] ?? ''), 0, 50),
             'customer_phone'   => trim($_POST['customer_phone']),
             'customer_email'   => trim($_POST['customer_email']),
             'adults'           => $_POST['adults'],
@@ -91,50 +128,18 @@ class BookingController {
             'note'             => $_POST['note']
         ];
 
-        // 2. VALIDATE (Tạo mảng chứa lỗi)
-        $errors = [];
-
-        // Validate Tên
-        if (empty($data['customer_name'])) {
-            $errors['customer_name'] = "Vui lòng nhập họ tên khách hàng.";
+        // Validate cơ bản
+        if (empty($data['customer_name']) || empty($data['customer_phone'])) {
+            echo "<script>alert('Vui lòng nhập tên và số điện thoại!'); window.history.back();</script>";
+            return;
         }
 
         // Validate SĐT
-        if (empty($data['customer_phone'])) {
-            $errors['customer_phone'] = "Vui lòng nhập số điện thoại.";
-        } elseif (!preg_match('/^[0-9]{9,11}$/', $data['customer_phone'])) {
-            $errors['customer_phone'] = "Số điện thoại không hợp lệ (9-11 số).";
+        if (!preg_match('/^[0-9]{9,11}$/', $data['customer_phone'])) {
+            echo "<script>alert('Số điện thoại không hợp lệ!'); window.history.back();</script>";
+            return;
         }
 
-        // Validate CCCD (Nếu có nhập thì phải đúng)
-        if (!empty($data['customer_id_card'])) {
-            if (!preg_match('/^[0-9]{9,12}$/', $data['customer_id_card'])) {
-                // Gán lỗi vào key 'customer_id_card'
-                $errors['customer_id_card'] = "CCCD không hợp lệ (Chỉ nhập số, 9-12 ký tự).";
-            }
-        }
-
-        // 3. NẾU CÓ LỖI -> TRẢ VỀ FORM CŨ KÈM THÔNG BÁO LỖI
-        if (!empty($errors)) {
-            // Lấy lại danh sách tour để đổ vào dropdown
-            $tours = (new Tour($db))->getAll();
-            
-            // Biến $oldData giữ lại những gì người dùng vừa nhập
-            $oldData = $data; 
-            
-            // Gọi lại file View tương ứng
-            if ($mode == 'create') {
-                require_once __DIR__ . '/../../views/booking/create.php';
-            } else {
-                // Nếu là edit thì cần thêm ID
-                $booking = $data; // Gán data vừa nhập vào biến booking để view edit hiển thị lại
-                $booking['id'] = $_POST['id']; 
-                require_once __DIR__ . '/../../views/booking/edit.php';
-            }
-            return; // Dừng chạy code, không lưu vào DB
-        }
-
-        // 4. NẾU KHÔNG CÓ LỖI -> LƯU VÀO DB
         if ($mode == 'create') {
             $result = $bookingModel->create($data);
         } else {

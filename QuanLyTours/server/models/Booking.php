@@ -55,7 +55,7 @@ class Booking {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // 4. Cập nhật Booking
+    // 4. Cập nhật Booking (Sửa thông tin)
     public function update($id, $data) {
         try {
             $query = "UPDATE bookings SET 
@@ -91,13 +91,29 @@ class Booking {
         }
     }
 
-    // 5. Cập nhật trạng thái
+    // 5. Cập nhật trạng thái (Duyệt/Hủy)
     public function updateStatus($id, $status) {
         $stmt = $this->conn->prepare("UPDATE bookings SET status = :status WHERE id = :id");
         return $stmt->execute([':status' => $status, ':id' => $id]);
     }
 
-    // 6. Xóa
+    // 6. [MỚI] Cập nhật tiền cọc
+    public function updateDeposit($id, $amount) {
+        try {
+            $query = "UPDATE bookings SET 
+                      deposit_amount = :amount, 
+                      status = 'deposited' 
+                      WHERE id = :id";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([':amount' => $amount, ':id' => $id]);
+            return "success";
+        } catch (Exception $e) {
+            return $e->getMessage();
+        }
+    }
+
+    // 7. Xóa
     public function delete($id) {
         $stmt = $this->conn->prepare("DELETE FROM bookings WHERE id = :id");
         return $stmt->execute([':id' => $id]);
