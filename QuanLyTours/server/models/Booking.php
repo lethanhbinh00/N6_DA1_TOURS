@@ -6,7 +6,6 @@ class Booking {
         $this->conn = $db;
     }
 
-    // 1. Lấy danh sách (JOIN với bảng Tour để lấy tên tour)
     public function getAll() {
         $query = "SELECT b.*, t.name as tour_name, t.code as tour_code 
                   FROM bookings b 
@@ -17,16 +16,15 @@ class Booking {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // 2. Tạo mới Booking
+    // [ĐÃ SỬA] Thêm return_date
     public function create($data) {
         try {
-            $booking_code = "BK-" . time(); // Sinh mã tự động
-            
+            $booking_code = "BK-" . time();
             $query = "INSERT INTO bookings 
                      (booking_code, tour_id, customer_name, customer_id_card, customer_phone, customer_email, 
-                      travel_date, adults, children, total_price, note) 
+                      travel_date, return_date, adults, children, total_price, note) 
                      VALUES 
-                     (:code, :tid, :name, :card, :phone, :email, :date, :adults, :child, :total, :note)";
+                     (:code, :tid, :name, :card, :phone, :email, :start, :end, :adults, :child, :total, :note)";
             
             $stmt = $this->conn->prepare($query);
             $stmt->execute([
@@ -36,7 +34,8 @@ class Booking {
                 ':card'   => $data['customer_id_card'],
                 ':phone'  => $data['customer_phone'],
                 ':email'  => $data['customer_email'],
-                ':date'   => $data['travel_date'],
+                ':start'  => $data['travel_date'],
+                ':end'    => $data['return_date'], // Mới
                 ':adults' => $data['adults'],
                 ':child'  => $data['children'],
                 ':total'  => $data['total_price'],
@@ -48,14 +47,13 @@ class Booking {
         }
     }
 
-    // 3. Lấy thông tin 1 booking theo ID (Để sửa)
     public function getById($id) {
         $stmt = $this->conn->prepare("SELECT * FROM bookings WHERE id = :id");
         $stmt->execute([':id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // 4. Cập nhật Booking (Sửa thông tin)
+    // [ĐÃ SỬA] Thêm return_date
     public function update($id, $data) {
         try {
             $query = "UPDATE bookings SET 
@@ -64,7 +62,8 @@ class Booking {
                       customer_id_card = :card,
                       customer_phone = :phone, 
                       customer_email = :email, 
-                      travel_date = :date, 
+                      travel_date = :start, 
+                      return_date = :end,
                       adults = :adults, 
                       children = :child, 
                       total_price = :total, 
@@ -78,7 +77,8 @@ class Booking {
                 ':card'   => $data['customer_id_card'],
                 ':phone'  => $data['customer_phone'],
                 ':email'  => $data['customer_email'],
-                ':date'   => $data['travel_date'],
+                ':start'  => $data['travel_date'],
+                ':end'    => $data['return_date'], // Mới
                 ':adults' => $data['adults'],
                 ':child'  => $data['children'],
                 ':total'  => $data['total_price'],
@@ -91,29 +91,27 @@ class Booking {
         }
     }
 
-    // 5. Cập nhật trạng thái (Duyệt/Hủy)
     public function updateStatus($id, $status) {
         $stmt = $this->conn->prepare("UPDATE bookings SET status = :status WHERE id = :id");
         return $stmt->execute([':status' => $status, ':id' => $id]);
     }
 
-    // 6. [MỚI] Cập nhật tiền cọc
-    public function updateDeposit($id, $amount) {
+    public function updateDeposit($id, $amount, $method, $note) {
         try {
             $query = "UPDATE bookings SET 
                       deposit_amount = :amount, 
+                      payment_method = :method, 
+                      payment_note = :note,
                       status = 'deposited' 
                       WHERE id = :id";
-            
             $stmt = $this->conn->prepare($query);
-            $stmt->execute([':amount' => $amount, ':id' => $id]);
+            $stmt->execute([':amount' => $amount, ':method' => $method, ':note' => $note, ':id' => $id]);
             return "success";
         } catch (Exception $e) {
             return $e->getMessage();
         }
     }
 
-    // 7. Xóa
     public function delete($id) {
         $stmt = $this->conn->prepare("DELETE FROM bookings WHERE id = :id");
         return $stmt->execute([':id' => $id]);
