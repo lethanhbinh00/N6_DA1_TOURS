@@ -46,5 +46,16 @@ class Customer {
     }
     
     // (Giữ nguyên hàm getBookingHistory...)
+    // Hàm lấy lịch sử Booking của khách (Dựa theo SĐT)
+    public function getBookingHistory($phone) {
+        $query = "SELECT b.*, t.name as tour_name 
+                  FROM bookings b 
+                  JOIN tours t ON b.tour_id = t.id 
+                  WHERE b.customer_phone = :phone 
+                  ORDER BY b.travel_date DESC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([':phone' => $phone]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
 ?>

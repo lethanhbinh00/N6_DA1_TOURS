@@ -4,25 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Travel ERP System</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <style>
         :root { --sidebar-bg: #2c3e50; --sidebar-color: #ecf0f1; --primary-color: #3498db; --active-bg: #34495e; }
         body { font-family: 'Inter', sans-serif; background-color: #f4f6f9; font-size: 0.9rem; }
         
-        /* Sidebar Styling - Z-Index 2000 để luôn nổi trên cùng */
+        /* Sidebar Styling - Z-Index 2000 */
         .sidebar { 
-            width: 260px; 
-            height: 100vh; 
-            position: fixed; 
-            top: 0; left: 0;
-            background: var(--sidebar-bg); 
-            color: var(--sidebar-color); 
-            overflow-y: auto; 
-            z-index: 2000; 
-            transition: all 0.3s;
+            width: 260px; height: 100vh; position: fixed; top: 0; left: 0;
+            background: var(--sidebar-bg); color: var(--sidebar-color); 
+            overflow-y: auto; z-index: 2000; transition: all 0.3s;
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         }
         
@@ -43,8 +42,23 @@
         .submenu.show { display: block; }
         .submenu .nav-link { padding-left: 50px; font-size: 0.85rem; }
         
-        /* Main Content - Đẩy sang phải */
+        /* Main Content */
         .main-content { margin-left: 260px; padding: 20px; position: relative; z-index: 1; }
+
+        /* [MỚI] CSS CHO SELECT2 ĐẸP HƠN */
+        .select2-container .select2-selection--single {
+            height: 38px !important;
+            border: 1px solid #dee2e6 !important;
+            display: flex;
+            align-items: center;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px !important;
+        }
+        .select2-container .select2-selection--single .select2-selection__rendered {
+            padding-left: 12px;
+            color: #212529;
+        }
     </style>
 </head>
 <body>

@@ -7,7 +7,7 @@
             <i class="fas fa-cart-plus me-2"></i>Tạo Booking Mới
         </h4>
         <a href="index.php?action=booking-list" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left me-2"></i>Quay lại danh sách
+            <i class="fas fa-arrow-left me-2"></i>Quay lại
         </a>
     </div>
 
@@ -54,20 +54,20 @@
                 <div class="row g-3 mb-4 bg-light p-3 rounded mx-0 border">
                     <div class="col-md-12">
                         <label class="form-label fw-bold text-primary">
-                            <i class="fas fa-search me-1"></i> Tìm khách hàng (Tên hoặc SĐT) <span class="text-danger">*</span>
+                            <i class="fas fa-search me-1"></i> Tìm khách hàng (Gõ Tên hoặc SĐT) <span class="text-danger">*</span>
                         </label>
-                        <select id="customer_select" class="form-select" onchange="fillCustomerInfo(this)" required>
-                            <option value="">-- Chọn khách hàng đã có --</option>
+                        <select id="customer_select" class="form-select" required>
+                            <option value="">-- Gõ để tìm kiếm --</option>
                             <?php foreach($customers as $cus): ?>
-                                <option value="<?= $cus['full_name'] ?>" 
-                                        data-phone="<?= $cus['phone'] ?>" 
-                                        data-email="<?= $cus['email'] ?>" 
-                                        data-card="<?= $cus['id_card'] ?>">
-                                    <?= $cus['full_name'] ?> - <?= $cus['phone'] ?>
+                                <option value="<?= htmlspecialchars($cus['full_name']) ?>" 
+                                        data-phone="<?= htmlspecialchars($cus['phone']) ?>" 
+                                        data-email="<?= htmlspecialchars($cus['email'] ?? '') ?>" 
+                                        data-card="<?= htmlspecialchars($cus['id_card'] ?? '') ?>">
+                                    <?= htmlspecialchars($cus['full_name']) ?> - <?= htmlspecialchars($cus['phone']) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <small class="text-muted fst-italic">Nếu không tìm thấy, vui lòng bấm nút "Tạo khách mới" ở trên.</small>
+                        <small class="text-muted fst-italic ps-1">Hệ thống sẽ tự điền thông tin bên dưới sau khi bạn chọn.</small>
                     </div>
 
                     <div class="col-md-4">
@@ -125,7 +125,35 @@
 </div>
 
 <script>
-    // 1. Hàm tính tiền Tour
+    // 1. KÍCH HOẠT SELECT2 & ĐIỀN DỮ LIỆU
+    $(document).ready(function() {
+        $('#customer_select').select2({
+            placeholder: "-- Tìm kiếm Khách hàng (Tên/SĐT) --",
+            allowClear: true,
+            width: '100%'
+        });
+
+        // Sự kiện khi chọn khách hàng
+        $('#customer_select').on('select2:select', function (e) {
+            var option = e.params.data.element;
+            
+            // Điền dữ liệu vào các ô input
+            $('#customer_name').val(option.value);
+            $('#customer_phone').val($(option).data('phone'));
+            $('#customer_email').val($(option).data('email'));
+            $('#customer_id_card').val($(option).data('card'));
+        });
+
+        // Sự kiện khi xóa chọn
+        $('#customer_select').on('select2:clear', function (e) {
+            $('#customer_name').val('');
+            $('#customer_phone').val('');
+            $('#customer_email').val('');
+            $('#customer_id_card').val('');
+        });
+    });
+
+    // 2. TÍNH TIỀN
     let priceAdult = 0;
     let priceChild = 0;
 
@@ -143,26 +171,6 @@
         
         document.getElementById('display_total').value = new Intl.NumberFormat('vi-VN').format(total) + ' ₫';
         document.getElementById('total_price').value = total;
-    }
-
-    // 2. Hàm tự động điền thông tin Khách
-    function fillCustomerInfo(select) {
-        const option = select.options[select.selectedIndex];
-        
-        if(select.value === "") {
-            // Xóa trắng nếu không chọn
-            document.getElementById('customer_name').value = "";
-            document.getElementById('customer_phone').value = "";
-            document.getElementById('customer_email').value = "";
-            document.getElementById('customer_id_card').value = "";
-            return;
-        }
-
-        // Điền dữ liệu
-        document.getElementById('customer_name').value = option.value;
-        document.getElementById('customer_phone').value = option.getAttribute('data-phone');
-        document.getElementById('customer_email').value = option.getAttribute('data-email');
-        document.getElementById('customer_id_card').value = option.getAttribute('data-card');
     }
 </script>
 
