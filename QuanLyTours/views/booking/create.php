@@ -23,7 +23,7 @@
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
                         <label class="form-label fw-bold">Chọn Tour <span class="text-danger">*</span></label>
-                        <select name="tour_id" class="form-select" required onchange="updatePrice(this)">
+                        <select name="tour_id" id="tour_select" class="form-select" required onchange="updatePrice(this)">
                             <option value="">-- Chọn Tour --</option>
                             <?php foreach($tours as $t): ?>
                                 <option value="<?= $t['id'] ?>" 
@@ -125,40 +125,59 @@
 </div>
 
 <script>
-    // 1. KÍCH HOẠT SELECT2 & ĐIỀN DỮ LIỆU
     $(document).ready(function() {
+        // 1. Kích hoạt Select2 cho Khách hàng (Code cũ)
         $('#customer_select').select2({
-            placeholder: "-- Tìm kiếm Khách hàng (Tên/SĐT) --",
+            placeholder: "-- Tìm kiếm Khách hàng --",
             allowClear: true,
             width: '100%'
         });
 
-        // Sự kiện khi chọn khách hàng
-        $('#customer_select').on('select2:select', function (e) {
-            var option = e.params.data.element;
-            
-            // Điền dữ liệu vào các ô input
-            $('#customer_name').val(option.value);
-            $('#customer_phone').val($(option).data('phone'));
-            $('#customer_email').val($(option).data('email'));
-            $('#customer_id_card').val($(option).data('card'));
+        // 2. [MỚI] Kích hoạt Select2 cho Tour
+        $('#tour_select').select2({
+            placeholder: "-- Gõ tên hoặc mã Tour để tìm --",
+            allowClear: true,
+            width: '100%'
         });
 
-        // Sự kiện khi xóa chọn
+        // --- SỰ KIỆN CHỌN KHÁCH HÀNG ---
+        $('#customer_select').on('select2:select', function (e) {
+            var option = e.params.data.element;
+            document.getElementById('customer_name').value = option.value;
+            document.getElementById('customer_phone').value = option.getAttribute('data-phone');
+            document.getElementById('customer_email').value = option.getAttribute('data-email');
+            document.getElementById('customer_id_card').value = option.getAttribute('data-card');
+        });
+
         $('#customer_select').on('select2:clear', function (e) {
-            $('#customer_name').val('');
-            $('#customer_phone').val('');
-            $('#customer_email').val('');
-            $('#customer_id_card').val('');
+            document.getElementById('customer_name').value = "";
+            document.getElementById('customer_phone').value = "";
+            document.getElementById('customer_email').value = "";
+            document.getElementById('customer_id_card').value = "";
+        });
+
+        // --- SỰ KIỆN CHỌN TOUR (ĐỂ TÍNH GIÁ) ---
+        // Khi dùng Select2, sự kiện onchange="updatePrice(this)" trên thẻ HTML có thể không chạy.
+        // Ta dùng sự kiện của jQuery để chắc chắn hơn.
+        $('#tour_select').on('select2:select', function (e) {
+            // Lấy thẻ option đang được chọn thực sự
+            var option = $(this).find(':selected')[0];
+            // Gọi hàm tính giá
+            updatePriceFromOption(option);
         });
     });
 
-    // 2. TÍNH TIỀN
+    // Hàm tính giá (Tách ra để dùng chung)
     let priceAdult = 0;
     let priceChild = 0;
 
-    function updatePrice(select) {
-        const option = select.options[select.selectedIndex];
+    function updatePrice(selectElement) {
+        // Hàm này giữ lại để dự phòng nếu browser không load JS Select2
+        const option = selectElement.options[selectElement.selectedIndex];
+        updatePriceFromOption(option);
+    }
+
+    function updatePriceFromOption(option) {
         priceAdult = parseInt(option.getAttribute('data-price-adult')) || 0;
         priceChild = parseInt(option.getAttribute('data-price-child')) || 0;
         calcTotal();

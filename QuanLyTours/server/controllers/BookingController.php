@@ -2,13 +2,15 @@
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../models/Booking.php';
 require_once __DIR__ . '/../models/Tour.php';
-require_once __DIR__ . '/../models/Customer.php'; // [MỚI] Gọi model Customer
+require_once __DIR__ . '/../models/Customer.php';
 
 class BookingController {
 
+    // 1. Danh sách
     public function index() {
         $db = (new Database())->getConnection();
-        $bookings = (new Booking($db))->getAll();
+        $bookingModel = new Booking($db);
+        $bookings = $bookingModel->getAll();
         
         if (!empty($bookings)) {
             foreach ($bookings as $key => $value) {
@@ -20,28 +22,26 @@ class BookingController {
                 $bookings[$key]['deposit_amount']   = $value['deposit_amount'] ?? 0;
             }
         }
+        
         require_once __DIR__ . '/../../views/booking/index.php';
     }
 
-    // [ĐÃ SỬA] Hàm tạo mới: Lấy thêm danh sách Khách hàng
+    // 2. Form tạo
     public function create() {
         $db = (new Database())->getConnection();
-        
-        // Lấy danh sách Tour
         $tours = (new Tour($db))->getAll();
-        
-        // Lấy danh sách Khách hàng để chọn
         $customers = (new Customer($db))->getAll();
-
         require_once __DIR__ . '/../../views/booking/create.php';
     }
 
+    // 3. Lưu tạo
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->processForm('create');
         }
     }
 
+    // 4. Form sửa
     public function edit() {
         $id = $_GET['id'] ?? null;
         if ($id) {
@@ -53,12 +53,14 @@ class BookingController {
         }
     }
 
+    // 5. Lưu sửa
     public function update() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->processForm('update');
         }
     }
 
+    // 6. Đổi trạng thái
     public function status() {
         $id = $_GET['id'] ?? null;
         $status = $_GET['status'] ?? null;
@@ -69,21 +71,41 @@ class BookingController {
         }
     }
 
+    // 7. [ĐÃ SỬA] Xử lý Thu Tiền Cọc (Logic Cộng Dồn)
     public function deposit() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = $_POST['booking_id'];
-            $amount = $_POST['deposit_amount'];
-            $total = $_POST['total_price_hidden'];
+            $addedAmount = (float)$_POST['deposit_amount']; // Tiền nạp thêm đợt này
+            $totalPrice = (float)$_POST['total_price_hidden'];
             $method = $_POST['payment_method'];
             $note = trim($_POST['payment_note']);
 
-            if ($amount > $total) {
-                echo "<script>alert('Lỗi: Tiền cọc không được lớn hơn Tổng tiền tour!'); window.history.back();</script>";
+            $db = (new Database())->getConnection();
+            $bookingModel = new Booking($db);
+
+            // A. Lấy thông tin cũ để biết đã cọc bao nhiêu rồi
+            $currentBooking = $bookingModel->getById($id);
+            $currentDeposit = (float)$currentBooking['deposit_amount'];
+
+            // B. Cộng dồn tiền
+            $newTotalDeposit = $currentDeposit + $addedAmount;
+
+            // C. Validate dư nợ
+            if ($newTotalDeposit > $totalPrice) {
+                echo "<script>alert('Lỗi: Tổng tiền đóng ($newTotalDeposit) lớn hơn giá tour ($totalPrice)!'); window.history.back();</script>";
                 return;
             }
 
-            $db = (new Database())->getConnection();
-            $result = (new Booking($db))->updateDeposit($id, $amount, $method, $note);
+            // D. Tự động xác định trạng thái
+            // Nếu đã đóng đủ (hoặc chênh lệch cực nhỏ) -> Hoàn tất
+            $newStatus = ($newTotalDeposit >= $totalPrice) ? 'completed' : 'deposited';
+
+            // E. Nối chuỗi ghi chú lịch sử
+            $historyNote = $currentBooking['payment_note'] . " | " . date('d/m') . ": +" . number_format($addedAmount) . " ($method)";
+            if(!empty($note)) $historyNote .= " - $note";
+
+            // F. Gọi Model cập nhật
+            $result = $bookingModel->updateDeposit($id, $newTotalDeposit, $method, $historyNote, $newStatus);
 
             if ($result === "success") {
                 header("Location: index.php?action=booking-list&msg=deposit_success");
@@ -93,6 +115,7 @@ class BookingController {
         }
     }
 
+    // 8. Xóa
     public function delete() {
         $id = $_GET['id'] ?? null;
         if ($id) {
@@ -102,13 +125,12 @@ class BookingController {
         }
     }
 
-    // --- HÀM XỬ LÝ CHÍNH ---
+    // Hàm phụ trợ xử lý form
     private function processForm($mode) {
         $database = new Database();
         $db = $database->getConnection();
         $bookingModel = new Booking($db);
 
-        // Lấy dữ liệu từ form (Các ô input này giờ đây được điền tự động từ JS)
         $data = [
             'tour_id'          => $_POST['tour_id'],
             'travel_date'      => $_POST['travel_date'],
@@ -123,19 +145,10 @@ class BookingController {
             'note'             => $_POST['note']
         ];
 
-        // Validate
         if (empty($data['customer_name']) || empty($data['customer_phone'])) {
             echo "<script>alert('Vui lòng chọn khách hàng!'); window.history.back();</script>";
             return;
         }
-
-        // Validate Ngày
-        if (!empty($data['return_date']) && $data['return_date'] < $data['travel_date']) {
-            echo "<script>alert('Ngày về không được nhỏ hơn ngày đi!'); window.history.back();</script>";
-            return;
-        }
-
-        // [ĐÃ BỎ] Đoạn code tự động tạo khách hàng đã bị xóa tại đây để đảm bảo quy trình chặt chẽ.
 
         if ($mode == 'create') {
             $result = $bookingModel->create($data);
