@@ -2,7 +2,7 @@
 const DB_HOST = 'localhost';
 const DB_NAME = 'travel_erp';
 const DB_USER = 'root';
-const DB_PASS = '123456';
+const DB_PASS = '';
 
 define('PATH_ROOT', __DIR__ . '/../'); 
 
