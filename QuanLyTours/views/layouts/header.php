@@ -17,7 +17,7 @@
         :root { --sidebar-bg: #2c3e50; --sidebar-color: #ecf0f1; --primary-color: #3498db; --active-bg: #34495e; }
         body { font-family: 'Inter', sans-serif; background-color: #f4f6f9; font-size: 0.9rem; }
         
-        /* Sidebar Styling - Z-Index 2000 */
+        /* Sidebar Styling - Z-Index 2000 để nổi lên trên cùng */
         .sidebar { 
             width: 260px; height: 100vh; position: fixed; top: 0; left: 0;
             background: var(--sidebar-bg); color: var(--sidebar-color); 
@@ -25,10 +25,14 @@
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         }
         
-        .sidebar-header { padding: 20px; font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .nav-item { border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .sidebar-header { 
+            padding: 20px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); 
+        }
+        .brand-text { font-size: 1.2rem; font-weight: bold; display: block;}
         
-        /* Link Styling */
+        /* Menu Item */
+        .nav-item { border-bottom: 1px solid rgba(255,255,255,0.05); }
         .nav-link { 
             color: #bdc3c7; padding: 12px 20px; display: flex; 
             justify-content: space-between; align-items: center; 
@@ -45,26 +49,31 @@
         /* Main Content */
         .main-content { margin-left: 260px; padding: 20px; position: relative; z-index: 1; }
 
-        /* [MỚI] CSS CHO SELECT2 ĐẸP HƠN */
+        /* CSS Fix cho Select2 khớp với Bootstrap */
         .select2-container .select2-selection--single {
             height: 38px !important;
             border: 1px solid #dee2e6 !important;
-            display: flex;
-            align-items: center;
+            display: flex; align-items: center;
         }
-        .select2-container--default .select2-selection--single .select2-selection__arrow {
-            height: 36px !important;
-        }
-        .select2-container .select2-selection--single .select2-selection__rendered {
-            padding-left: 12px;
-            color: #212529;
-        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow { height: 36px !important; }
+        .select2-container .select2-selection--single .select2-selection__rendered { padding-left: 12px; color: #212529; }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
-    <div class="sidebar-header"><i class="fas fa-globe-americas me-2"></i>FOURCHICKENS</div>
+    <div class="sidebar-header">
+        <span class="brand-text"><i class="fas fa-globe-americas me-2"></i>FOURCHICKENS</span>
+        
+        <?php if(isset($_SESSION['user_name'])): ?>
+        <div class="mt-2 pt-2 border-top border-secondary small text-white-50">
+            <div class="d-flex align-items-center justify-content-between">
+                <span><i class="fas fa-user-circle me-1"></i> <?= htmlspecialchars($_SESSION['user_name']) ?></span>
+                <a href="index.php?action=logout" class="text-danger text-decoration-none fw-bold bg-white px-2 rounded" style="font-size: 10px;">Thoát</a>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
     
     <?php $act = $_GET['action'] ?? ''; ?>
 
@@ -120,8 +129,16 @@
                 <a href="#" class="nav-link">Công nợ</a>
             </div>
         </li>
+        
+        <li class="nav-item">
+            <a href="index.php?action=user-list" class="nav-link <?= ($act=='user-list')?'active':'' ?>">
+                <div class="d-flex align-items-center"><i class="fas fa-users-cog me-2"></i> Quản lý Tài khoản</div>
+            </a>
+        </li>
 
-        <li class="nav-item"><a href="#" class="nav-link"><div class="d-flex align-items-center"><i class="fas fa-chart-line me-2"></i> Báo cáo</div></a></li>
+        <li class="nav-item">
+            <a href="#" class="nav-link"><div class="d-flex align-items-center"><i class="fas fa-chart-line me-2"></i> Báo cáo</div></a>
+        </li>
     </ul>
 </div>
 
