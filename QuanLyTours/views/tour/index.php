@@ -32,7 +32,7 @@
                         <th>Mã Tour</th>
                         <th>Tên Tour</th>
                         <th>Loại</th>
-                        <th>Giá bán</th>
+                        <th>Giá vé</th>
                         <th class="text-end pe-4">Thao tác</th>
                     </tr>
                 </thead>

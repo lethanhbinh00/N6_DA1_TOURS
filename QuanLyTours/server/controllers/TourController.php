@@ -229,6 +229,77 @@ class TourController {
             }
         }
     }
+    /* ============================
+        GIÁ THEO MÙA
+    ============================ */
+    public function prices()
+    {
+        $tour_id = $_GET['id'] ?? null; // lấy id tour từ URL
+        if (!$tour_id) {
+            echo "Tour không tồn tại!"; 
+            exit;
+        }
+
+        $database = new Database();
+        $db = $database->getConnection();
+
+        require_once __DIR__ . '/../models/TourPrice.php';
+        $priceModel = new TourPrice($db);
+
+        require_once __DIR__ . '/../models/Tour.php';
+        $tourModel = new Tour($db);
+
+        $tour = $tourModel->getById($tour_id);        // chỉ lấy tour này
+        $prices = $priceModel->getByTourId($tour_id); // chỉ lấy giá tour này
+
+        require_once __DIR__ . '/../../views/tour/prices.php';
+    }
+
+
+
+    public function priceStore()
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $database = new Database();
+            $db = $database->getConnection();
+
+            require_once __DIR__ . '/../models/TourPrice.php';
+            $priceModel = new TourPrice($db);
+
+            $tour_id = $_POST['tour_id'];
+            $priceModel->create([
+                'tour_id' => $tour_id,
+                'name' => $_POST['name'],
+                'start_date' => $_POST['start_date'],
+                'end_date' => $_POST['end_date'],
+                'price_adult' => $_POST['price_adult'],
+                'price_child' => $_POST['price_child']
+            ]);
+
+            header("Location: index.php?action=tour-prices&id=" . $tour_id);
+            exit;
+        }
+    }
+
+
+    public function priceDelete()
+    {
+        $id = $_GET['id'] ?? null;
+
+        if ($id) {
+            $database = new Database();
+            $db = $database->getConnection();
+
+            require_once __DIR__ . '/../models/TourPrice.php';
+            $priceModel = new TourPrice($db);
+
+            $priceModel->delete($id);
+        }
+
+        header("Location: index.php?action=tour-prices");
+        exit;
+    }
+
 
 }
 ?>
