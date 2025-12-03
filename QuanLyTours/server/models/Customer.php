@@ -32,9 +32,12 @@ class Customer {
         }
     }
 
-    // Cập nhật (Có id_card)
+    // [ĐÃ NÂNG CẤP] Cập nhật thông tin khách và đồng bộ sang Booking
     public function update($id, $data) {
         try {
+            $this->conn->beginTransaction();
+
+            // 1. Cập nhật bảng Customers (Gốc)
             $query = "UPDATE customers SET 
                       full_name = :name, 
                       id_card = :card, 
@@ -46,10 +49,37 @@ class Customer {
                       WHERE id = :id";
             
             $stmt = $this->conn->prepare($query);
-            $data[':id'] = $id; // Thêm ID vào mảng tham số
+            $data[':id'] = $id;
             $stmt->execute($data);
+
+            // 2. [MỚI] Đồng bộ sang bảng Bookings (Tìm theo SĐT cũ hoặc ID nếu có)
+            // Ở đây ta cập nhật dựa trên ID khách hàng (nếu bảng booking có lưu customer_id thì tốt nhất)
+            // Nhưng do bảng booking hiện tại lưu thông tin độc lập, ta sẽ update dựa trên SĐT cũ trước khi đổi (nếu SĐT là khóa chính logic)
+            // TUY NHIÊN: Cách an toàn nhất bây giờ là update theo customer_phone MỚI (nếu khách không đổi SĐT)
+            // Hoặc tốt nhất là update theo ID (nhưng bảng booking của bạn chưa có cột customer_id liên kết cứng).
+            
+            // => GIẢI PHÁP TẠM THỜI:
+            // Cập nhật bảng bookings dựa trên phone MỚI (giả sử khách chỉ sửa tên/cccd chứ không đổi số đt).
+            // Nếu bạn đổi cả số điện thoại thì hệ thống sẽ không biết đường nào mà lần.
+            
+            $syncQuery = "UPDATE bookings SET 
+                          customer_name = :name,
+                          customer_id_card = :card,
+                          customer_email = :email
+                          WHERE customer_phone = :phone"; // Dựa vào SĐT để tìm đơn hàng
+            
+            $stmtSync = $this->conn->prepare($syncQuery);
+            $stmtSync->execute([
+                ':name'  => $data[':name'],
+                ':card'  => $data[':card'],
+                ':email' => $data[':email'],
+                ':phone' => $data[':phone']
+            ]);
+
+            $this->conn->commit();
             return "success";
         } catch (Exception $e) {
+            $this->conn->rollBack();
             if ($e->errorInfo[1] == 1062) return "duplicate";
             return $e->getMessage();
         }

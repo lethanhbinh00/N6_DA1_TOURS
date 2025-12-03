@@ -88,6 +88,7 @@ switch ($action) {
     case 'booking-pax':      $bookingController->pax(); break;       // Xem giao diện Pax
     case 'booking-pax-store': $bookingController->paxStore(); break; // Lưu khách
     case 'booking-pax-del':   $bookingController->paxDelete(); break; // Xóa khách
+    
     // ...
     case 'booking-invoice': 
         $bookingController->invoice(); 
