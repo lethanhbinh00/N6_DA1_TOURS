@@ -272,10 +272,7 @@
                                                 onclick="return confirm('Xóa vĩnh viễn?')"><i
                                                     class="fas fa-trash me-2"></i>Xóa vĩnh viễn</a></li>
                                         <?php endif; ?>
-                                        <a href="index.php?action=booking-pax&id=<?= $bk['id'] ?>"
-                                            class="btn btn-sm btn-dark me-1" title="Danh sách thành viên đoàn">
-                                            <i class="fas fa-users"></i>
-                                        </a>
+                                        
                                     </ul>
                                 </div>
                             </div>
