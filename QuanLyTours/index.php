@@ -31,7 +31,7 @@ $bookingController = new BookingController();
 $cusController = new CustomerController();
 $guideController = new GuideController();
 $supController = new SupplierController();
-$userController = new UserController(); 
+$userController = new UserController(); // [ĐÃ SỬA LỖI UNDEFINED]
 
 // 4. LẤY ACTION (PHẢI LÀM BƯỚC NÀY TRƯỚC KHI CHECK LOGIN)
 $action = $_GET['action'] ?? 'dashboard';
@@ -58,9 +58,9 @@ switch ($action) {
     // --- USER (TÀI KHOẢN) ---
     case 'user-list':   $userController->index(); break;
     case 'user-store':  $userController->store(); break;
+    case 'user-detail': $userController->detail(); break;
+    case 'user-edit':   $userController->edit(); break;
     case 'user-update': $userController->update(); break;
-    case 'user-detail': $userController->detail(); break; // Xem chi tiết
-    case 'user-edit':   $userController->edit(); break;   // Form sửa
     case 'user-delete': $userController->delete(); break;
 
     // --- TOUR ---
@@ -83,14 +83,32 @@ switch ($action) {
     case 'booking-status':  $bookingController->status(); break;
     case 'booking-deposit': $bookingController->deposit(); break;
     case 'booking-delete':  $bookingController->delete(); break;
+    case 'booking-detail':  $bookingController->detail(); break;
+    // ... Trong phần Booking ...
+    case 'booking-pax':      $bookingController->pax(); break;       // Xem giao diện Pax
+    case 'booking-pax-store': $bookingController->paxStore(); break; // Lưu khách
+    case 'booking-pax-del':   $bookingController->paxDelete(); break; // Xóa khách
+    // ...
+    case 'booking-invoice': 
+        $bookingController->invoice(); 
+        break;
+    // ...
+    
+    // Booking Operations
+    case 'booking-ops':     $bookingController->operations(); break;
+    case 'booking-pax-add': $bookingController->paxStore(); break;
+    case 'booking-pax-del': $bookingController->paxDelete(); break;
+    case 'booking-srv-add': $bookingController->serviceStore(); break;
+    case 'booking-srv-del': $bookingController->serviceDelete(); break;
 
     // --- CUSTOMER ---
-   case 'customer-list':   $cusController->index(); break;
+    case 'customer-list':   $cusController->index(); break;
     case 'customer-store':  $cusController->store(); break;
     case 'customer-edit':   $cusController->edit(); break;
     case 'customer-update': $cusController->update(); break;
     case 'customer-detail': $cusController->detail(); break;
     case 'customer-delete': $cusController->delete(); break;
+
     // --- GUIDE ---
     case 'guide-list':   $guideController->index(); break;
     case 'guide-store':  $guideController->store(); break;
@@ -100,6 +118,8 @@ switch ($action) {
     case 'supplier-list':   $supController->index(); break;
     case 'supplier-store':  $supController->store(); break;
     case 'supplier-delete': $supController->delete(); break;
+
+    
 
     // --- DEFAULT ---
     default:

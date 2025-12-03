@@ -13,22 +13,12 @@
             justify-content: center; 
         }
         .login-card { 
-            width: 100%; 
-            max-width: 400px; 
-            border: none; 
-            border-radius: 10px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
-            overflow: hidden;
+            width: 100%; max-width: 400px; 
+            border: none; border-radius: 10px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden;
         }
-        .login-header { 
-            background: #fff; 
-            padding: 30px 20px 10px; 
-            text-align: center; 
-        }
-        .login-body { 
-            background: #fff; 
-            padding: 20px 30px 40px; 
-        }
+        .login-header { background: #fff; padding: 30px 20px 10px; text-align: center; }
+        .login-body { background: #fff; padding: 20px 30px 40px; }
     </style>
 </head>
 <body>
@@ -41,9 +31,7 @@
     
     <div class="login-body">
         <?php if(isset($error)): ?>
-            <div class="alert alert-danger py-2 small text-center mb-3">
-                <?= $error ?>
-            </div>
+            <div class="alert alert-danger py-2 small text-center mb-3"><?= $error ?></div>
         <?php endif; ?>
 
         <form action="index.php?action=check-login" method="POST">
@@ -51,18 +39,12 @@
                 <label class="form-label small fw-bold text-secondary">EMAIL</label>
                 <input type="email" name="email" class="form-control" placeholder="admin@travel.com" required autofocus>
             </div>
-            
             <div class="mb-4">
                 <label class="form-label small fw-bold text-secondary">MẬT KHẨU</label>
                 <input type="password" name="password" class="form-control" placeholder="******" required>
             </div>
-            
             <button type="submit" class="btn btn-primary w-100 fw-bold py-2">ĐĂNG NHẬP</button>
         </form>
-        
-        <div class="text-center mt-3">
-            <a href="#" class="small text-decoration-none text-muted">Quên mật khẩu?</a>
-        </div>
     </div>
 </div>
 

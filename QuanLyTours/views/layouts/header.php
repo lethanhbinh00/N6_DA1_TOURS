@@ -102,7 +102,7 @@
             </a>
             <div id="menu-booking" class="submenu <?= (strpos($act, 'booking')!==false || strpos($act, 'customer')!==false)?'show':'' ?>">
                 <a href="index.php?action=booking-create" class="nav-link">Tạo Booking Mới</a>
-                <a href="index.php?action=booking-list" class="nav-link">Danh sách Đơn hàng</a>
+                <a href="index.php?action=booking-list" class="nav-link">Quản lý Booking</a>
                 <a href="index.php?action=customer-list" class="nav-link">Quản lý Khách hàng</a>
             </div>
         </li>
