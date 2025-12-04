@@ -66,15 +66,43 @@ class Booking {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    // 4. Cập nhật Booking
     public function update($id, $data) {
         try {
-            $query = "UPDATE bookings SET tour_id=:tid, customer_name=:name, customer_id_card=:card, customer_phone=:phone, customer_email=:email, travel_date=:start, return_date=:end, adults=:adults, children=:child, total_price=:total, note=:note WHERE id=:id";
+            $query = "UPDATE bookings SET 
+                      tour_id = :tid, 
+                      customer_name = :name, 
+                      customer_id_card = :card,
+                      customer_phone = :phone, 
+                      customer_email = :email, 
+                      travel_date = :date, 
+                      adults = :adults, 
+                      children = :child, 
+                      total_price = :total, 
+                      note = :note 
+                      WHERE id = :id";
+            
             $stmt = $this->conn->prepare($query);
-            $stmt->execute([':tid'=>$data['tour_id'], ':name'=>$data['customer_name'], ':card'=>$data['customer_id_card'], ':phone'=>$data['customer_phone'], ':email'=>$data['customer_email'], ':start'=>$data['travel_date'], ':end'=>$data['return_date'], ':adults'=>$data['adults'], ':child'=>$data['children'], ':total'=>$data['total_price'], ':note'=>$data['note'], ':id'=>$id]);
+            $stmt->execute([
+                ':tid'    => $data['tour_id'],
+                ':name'   => $data['customer_name'],
+                ':card'   => $data['customer_id_card'],
+                ':phone'  => $data['customer_phone'],
+                ':email'  => $data['customer_email'],
+                ':date'   => $data['travel_date'],
+                ':adults' => $data['adults'],
+                ':child'  => $data['children'],
+                ':total'  => $data['total_price'],
+                ':note'   => $data['note'],
+                ':id'     => $id
+            ]);
             return "success";
-        } catch (Exception $e) { return $e->getMessage(); }
+        } catch (Exception $e) {
+            return $e->getMessage();
+        }
     }
 
+    // 5. Cập nhật trạng thái
     public function updateStatus($id, $status) {
         $stmt = $this->conn->prepare("UPDATE bookings SET status = :status WHERE id = :id");
         return $stmt->execute([':status' => $status, ':id' => $id]);
