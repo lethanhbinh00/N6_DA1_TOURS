@@ -14,3 +14,4 @@ try {
 } catch (Exception $e) {
     die('Lỗi kết nối DB: ' . $e->getMessage());
 }
+?>

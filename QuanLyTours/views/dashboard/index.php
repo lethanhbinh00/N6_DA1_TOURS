@@ -1,58 +1,52 @@
-<?php 
-require_once __DIR__ . '/../layouts/header.php'; 
+<?php require_once __DIR__ . '/../layouts/header.php'; ?>
 
-$revenue = $revenue ?? 0;
-$totalBookings = $totalBookings ?? 0;
-$totalTours = $totalTours ?? 0;
-$totalCustomers = $totalCustomers ?? 0;
-$recentBookings = $recentBookings ?? [];
-?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <div class="container-fluid p-4">
     <div class="d-flex align-items-center mb-4">
-        <h3 class="fw-bold text-secondary mb-0">Dashboard</h3>
+        <h3 class="fw-bold text-secondary mb-0">📊 Bảng điều khiển trung tâm</h3>
     </div>
 
     <div class="row g-4 mb-4">
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100 p-3">
+            <div class="card border-0 shadow-sm h-100 p-3 border-start border-4 border-success">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <p class="text-muted mb-1 small fw-bold">DOANH THU</p>
-                        <h4 class="fw-bold text-success mb-0"><?= number_format($revenue) ?> ₫</h4>
+                        <h4 class="fw-bold text-success mb-0"><?= number_format($revenue ?? 0) ?> ₫</h4>
                     </div>
                     <i class="fas fa-dollar-sign fa-2x text-success opacity-25"></i>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100 p-3">
+            <div class="card border-0 shadow-sm h-100 p-3 border-start border-4 border-primary">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <p class="text-muted mb-1 small fw-bold">ĐƠN HÀNG</p>
-                        <h4 class="fw-bold text-primary mb-0"><?= $totalBookings ?></h4>
+                        <h4 class="fw-bold text-primary mb-0"><?= $totalBookings ?? 0 ?></h4>
                     </div>
                     <i class="fas fa-shopping-cart fa-2x text-primary opacity-25"></i>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100 p-3">
+            <div class="card border-0 shadow-sm h-100 p-3 border-start border-4 border-warning">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted mb-1 small fw-bold">TOUR CHẠY</p>
-                        <h4 class="fw-bold text-warning mb-0"><?= $totalTours ?></h4>
+                        <p class="text-muted mb-1 small fw-bold">TOUR ĐANG CHẠY</p>
+                        <h4 class="fw-bold text-warning mb-0"><?= $totalTours ?? 0 ?></h4>
                     </div>
-                    <i class="fas fa-suitcase fa-2x text-warning opacity-25"></i>
+                    <i class="fas fa-map-marked-alt fa-2x text-warning opacity-25"></i>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100 p-3">
+            <div class="card border-0 shadow-sm h-100 p-3 border-start border-4 border-info">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <p class="text-muted mb-1 small fw-bold">KHÁCH HÀNG</p>
-                        <h4 class="fw-bold text-info mb-0"><?= $totalCustomers ?></h4>
+                        <h4 class="fw-bold text-info mb-0"><?= $totalCustomers ?? 0 ?></h4>
                     </div>
                     <i class="fas fa-users fa-2x text-info opacity-25"></i>
                 </div>
@@ -60,63 +54,137 @@ $recentBookings = $recentBookings ?? [];
         </div>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-4 mb-4">
         <div class="col-md-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white fw-bold py-3">
+                    <i class="fas fa-chart-line me-2 text-primary"></i>Xu hướng doanh thu (7 ngày qua)
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white fw-bold py-3">
+                    <i class="fas fa-chart-pie me-2 text-warning"></i>Tỉ lệ đơn hàng
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between">
                     <h6 class="fw-bold mb-0">🛒 Đơn hàng mới nhất</h6>
+                    <a href="index.php?action=booking-list" class="small text-decoration-none">Xem tất cả</a>
                 </div>
                 <div class="card-body p-0">
-                    <table class="table table-hover mb-0">
+                    <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light small">
-                            <tr>
-                                <th>Mã</th>
-                                <th>Khách hàng</th>
-                                <th>Tour</th>
-                                <th>Trạng thái</th>
-                            </tr>
+                            <tr><th>Mã</th><th>Khách hàng</th><th>Tour</th><th>Trạng thái</th></tr>
                         </thead>
                         <tbody>
-                            <?php if(!empty($recentBookings)): ?>
-                            <?php foreach($recentBookings as $bk): ?>
+                            <?php if(!empty($recentBookings)): foreach($recentBookings as $bk): ?>
                             <tr>
-                                <td class="fw-bold"><?= $bk['booking_code'] ?></td>
+                                <td class="fw-bold text-primary"><?= $bk['booking_code'] ?></td>
                                 <td><?= htmlspecialchars($bk['customer_name']) ?></td>
-                                <td><?= htmlspecialchars($bk['tour_name']) ?></td>
+                                <td class="text-truncate" style="max-width: 120px;"><?= htmlspecialchars($bk['tour_name']) ?></td>
                                 <td>
-                                    <?php if($bk['status']=='new'): ?>
-                                    <span class="badge bg-secondary">Mới</span>
-                                    <?php elseif($bk['status']=='confirmed'): ?>
-                                    <span class="badge bg-primary">Đã xác nhận</span>
-                                    <?php else: ?>
-                                    <span class="badge bg-danger"><?= $bk['status'] ?></span>
-                                    <?php endif; ?>
+                                    <?php 
+                                        $s = $bk['status'];
+                                        $badge = 'secondary';
+                                        if($s=='confirmed') $badge='primary';
+                                        if($s=='deposited') $badge='warning';
+                                        if($s=='completed') $badge='success';
+                                        if($s=='cancelled') $badge='danger';
+                                    ?>
+                                    <span class="badge bg-<?= $badge ?>"><?= $s ?></span>
                                 </td>
                             </tr>
-                            <?php endforeach; ?>
-                            <?php endif; ?>
+                            <?php endforeach; endif; ?>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm">
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white py-3">
-                    <h6 class="fw-bold mb-0">⚡ Thao tác nhanh</h6>
+                    <h6 class="fw-bold mb-0 text-danger"><i class="fas fa-fire me-2"></i>Sắp khởi hành (7 ngày tới)</h6>
                 </div>
-                <div class="card-body d-grid gap-2">
-                    <a href="index.php?action=booking-create" class="btn btn-success p-3 text-start"><i
-                            class="fas fa-plus-circle me-2"></i> Tạo Booking Mới</a>
-                    <a href="index.php?action=index" class="btn btn-primary p-3 text-start"><i
-                            class="fas fa-layer-group me-2"></i> Thêm Tour Mới</a>
-                    <a href="index.php?action=customer-list" class="btn btn-info text-white p-3 text-start"><i
-                            class="fas fa-user-plus me-2"></i> Thêm Khách Hàng</a>
+                <div class="card-body">
+                    <?php if(!empty($upcomingTours)): ?>
+                        <ul class="list-group list-group-flush">
+                            <?php foreach($upcomingTours as $up): ?>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div>
+                                    <div class="fw-bold"><?= htmlspecialchars($up['tour_name']) ?></div>
+                                    <small class="text-muted">
+                                        <i class="far fa-calendar-alt me-1"></i> <?= date('d/m', strtotime($up['travel_date'])) ?> 
+                                        • <i class="fas fa-users me-1"></i> <?= $up['total_pax'] ?> khách
+                                    </small>
+                                </div>
+                                <a href="#" class="btn btn-sm btn-outline-primary"><i class="fas fa-arrow-right"></i></a>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php else: ?>
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-calendar-check fa-2x mb-2 opacity-50"></i><br>Không có đoàn nào sắp đi.
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    // 1. Biểu đồ Doanh thu
+    const ctxRev = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctxRev, {
+        type: 'line',
+        data: {
+            labels: <?= json_encode($chartDates ?? []) ?>,
+            datasets: [{
+                label: 'Doanh thu (VNĐ)',
+                data: <?= json_encode($chartRevenue ?? []) ?>,
+                borderColor: '#198754',
+                backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    // 2. Biểu đồ Trạng thái
+    const ctxStatus = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+            labels: ['Mới', 'Đã xác nhận', 'Đã cọc', 'Hoàn tất', 'Hủy'],
+            datasets: [{
+                data: [
+                    <?= $statusCounts['new'] ?? 0 ?>, 
+                    <?= $statusCounts['confirmed'] ?? 0 ?>, 
+                    <?= $statusCounts['deposited'] ?? 0 ?>,
+                    <?= $statusCounts['completed'] ?? 0 ?>,
+                    <?= $statusCounts['cancelled'] ?? 0 ?>
+                ],
+                backgroundColor: ['#6c757d', '#0d6efd', '#ffc107', '#198754', '#dc3545']
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+</script>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
