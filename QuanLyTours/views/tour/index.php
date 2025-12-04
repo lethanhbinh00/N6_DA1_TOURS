@@ -32,11 +32,7 @@
                         <th>Mã Tour</th>
                         <th>Tên Tour</th>
                         <th>Loại</th>
-<<<<<<< HEAD
                         <th>Giá bán</th>
-=======
-                        <th>Giá vé</th>
->>>>>>> 3394725e0d7f352cac85079cf8b5d5b6f67a905a
                         <th class="text-end pe-4">Thao tác</th>
                     </tr>
                 </thead>
