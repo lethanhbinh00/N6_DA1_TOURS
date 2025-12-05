@@ -8,7 +8,7 @@
                 <i class="fas fa-arrow-left"></i> Quay lại danh sách
             </a>
             <h4 class="fw-bold text-primary m-0">
-                Thông tin đơn hàng: <span class="text-dark">#<?= $booking['booking_code'] ?></span>
+                Thông tin đơn hàng: <span class="text-dark">#<?= htmlspecialchars($booking['booking_code']) ?></span>
             </h4>
             <span class="text-muted small">Ngày tạo: <?= date('d/m/Y H:i', strtotime($booking['created_at'])) ?></span>
         </div>
@@ -72,85 +72,148 @@
                 <div class="card-header bg-white fw-bold text-uppercase small text-secondary py-3">Khách hàng đại diện</div>
                 <div class="card-body">
                     <h5 class="fw-bold text-dark mb-1"><?= htmlspecialchars($booking['customer_name']) ?></h5>
-                    <p class="text-muted small mb-3"><i class="fas fa-id-card me-2"></i> <?= htmlspecialchars($booking['customer_id_card']) ?></p>
+                    <p class="text-muted small mb-3">
+                        <i class="fas fa-id-card me-2"></i> <?= htmlspecialchars($booking['customer_id_card'] ?? '---') ?>
+                    </p>
                     
                     <hr class="my-2">
                     <div class="my-2"><i class="fas fa-phone me-2 text-secondary"></i> <?= htmlspecialchars($booking['customer_phone']) ?></div>
-                    <div class="my-2"><i class="fas fa-envelope me-2 text-secondary"></i> <?= htmlspecialchars($booking['customer_email']) ?></div>
+                    <div class="my-2"><i class="fas fa-envelope me-2 text-secondary"></i> <?= htmlspecialchars($booking['customer_email'] ?? '---') ?></div>
                     
                     <div class="alert alert-warning mt-3 mb-0 small">
                         <i class="fas fa-sticky-note me-1"></i> <b>Ghi chú:</b> <?= htmlspecialchars($booking['note'] ?? 'Không có') ?>
                     </div>
                 </div>
             </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold text-uppercase small text-secondary py-3">Thành viên đoàn (<?= count($paxList) ?>)</div>
+                <div class="card-body p-0">
+                     <ul class="list-group list-group-flush">
+                        <?php if(!empty($paxList)): foreach($paxList as $p): ?>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><?= htmlspecialchars($p['full_name']) ?></span>
+                                <small class="text-muted"><?= ($p['gender']=='male')?'Nam':'Nữ' ?></small>
+                            </li>
+                        <?php endforeach; else: ?>
+                            <li class="list-group-item text-center text-muted small">Chưa có danh sách đoàn.</li>
+                        <?php endif; ?>
+                     </ul>
+                     <div class="p-2 text-center">
+                         <a href="index.php?action=booking-ops&id=<?= $booking['id'] ?>" class="small text-decoration-none">Quản lý danh sách đoàn &rarr;</a>
+                     </div>
+                </div>
+            </div>
+
         </div>
 
         <div class="col-lg-8">
             
             <div class="card shadow-sm border-0 mb-4">
-                <div class="card-body d-flex align-items-center">
-                    <div class="bg-light p-3 rounded me-3 text-center" style="min-width: 80px;">
-                        <i class="fas fa-suitcase fa-2x text-primary opacity-50"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold mb-1"><?= htmlspecialchars($tour['name']) ?></h5>
-                        <div class="text-muted small">
-                            Mã: <span class="badge bg-secondary"><?= $tour['code'] ?></span> | 
-                            Khởi hành: <b class="text-dark"><?= date('d/m/Y', strtotime($booking['travel_date'])) ?></b>
-                            <?php if(!empty($booking['return_date'])): ?> - <?= date('d/m/Y', strtotime($booking['return_date'])) ?><?php endif; ?>
+                <div class="card-body">
+                    <div class="d-flex align-items-start">
+                        <div class="bg-light p-3 rounded me-3 text-center" style="min-width: 80px;">
+                            <i class="fas fa-suitcase fa-2x text-primary opacity-50"></i>
                         </div>
-                        <div class="mt-1">
-                            <span class="me-3"><i class="fas fa-user me-1"></i> <b><?= $booking['adults'] ?></b> Người lớn</span>
-                            <span><i class="fas fa-child me-1"></i> <b><?= $booking['children'] ?></b> Trẻ em</span>
+                        <div class="flex-grow-1">
+                            <h4 class="fw-bold mb-1"><?= htmlspecialchars($tour['name']) ?></h4>
+                            <div class="mb-2">
+                                <span class="badge bg-info text-dark border border-info me-1">
+                                    <?= ($tour['type']=='domestic')?'Trong nước':'Quốc tế' ?>
+                                </span>
+                                <span class="badge bg-secondary"><?= htmlspecialchars($tour['code']) ?></span>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-calendar-alt text-primary me-2 fa-lg"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Ngày khởi hành</small>
+                                            <strong><?= date('d/m/Y', strtotime($booking['travel_date'])) ?></strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-undo text-secondary me-2 fa-lg"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Ngày về (Dự kiến)</small>
+                                            <strong><?= !empty($booking['return_date']) ? date('d/m/Y', strtotime($booking['return_date'])) : '---' ?></strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-users text-success me-2 fa-lg"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Số lượng khách</small>
+                                            <strong><?= $booking['adults'] ?></strong> Lớn, <strong><?= $booking['children'] ?></strong> Trẻ
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white fw-bold text-uppercase small text-success py-3">
-                    <i class="fas fa-users me-2"></i>Danh sách thành viên đoàn (Pax List)
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold m-0 text-primary"><i class="fas fa-map-marked-alt me-2"></i>Lịch trình chi tiết</h6>
                 </div>
-                <div class="card-body p-0">
-                    <table class="table table-striped mb-0">
-                        <thead>
-                            <tr class="small text-muted">
-                                <th class="ps-4">#</th>
-                                <th>Họ và tên</th>
-                                <th>Giới tính</th>
-                                <th>Ngày sinh</th>
-                                <th>Ghi chú</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if(!empty($paxList)): $i=1; foreach($paxList as $p): ?>
-                            <tr>
-                                <td class="ps-4 text-muted"><?= $i++ ?></td>
-                                <td class="fw-bold"><?= htmlspecialchars($p['full_name']) ?></td>
-                                <td><?= ($p['gender']=='male') ? 'Nam' : 'Nữ' ?></td>
-                                <td><?= !empty($p['dob']) ? date('d/m/Y', strtotime($p['dob'])) : '' ?></td>
-                                <td class="text-danger small"><?= htmlspecialchars($p['note']) ?></td>
-                            </tr>
-                            <?php endforeach; else: ?>
-                            <tr><td colspan="5" class="text-center py-3 text-muted small">Chưa cập nhật danh sách đoàn.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                <div class="card-body">
+                    <?php if(!empty($itineraries)): ?>
+                        <div class="timeline">
+                            <?php foreach($itineraries as $day): ?>
+                                <div class="d-flex mb-4">
+                                    <div class="flex-shrink-0 text-center" style="width: 60px;">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold mx-auto" 
+                                             style="width: 40px; height: 40px;">
+                                            <?= $day['day_number'] ?>
+                                        </div>
+                                        <small class="text-muted d-block mt-1">Ngày</small>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3 pb-4 border-bottom">
+                                        <h6 class="fw-bold text-uppercase text-dark mb-2"><?= htmlspecialchars($day['title']) ?></h6>
+                                        <p class="text-secondary mb-2" style="white-space: pre-line;"><?= htmlspecialchars($day['description']) ?></p>
+                                        
+                                        <div class="d-flex flex-wrap gap-2 mt-2">
+                                            <?php if(!empty($day['meals'])): ?>
+                                                <span class="badge bg-warning text-dark border border-warning"><i class="fas fa-utensils me-1"></i> <?= $day['meals'] ?></span>
+                                            <?php endif; ?>
+                                            <?php if(!empty($day['accommodation'])): ?>
+                                                <span class="badge bg-info text-dark border border-info"><i class="fas fa-bed me-1"></i> <?= $day['accommodation'] ?></span>
+                                            <?php endif; ?>
+                                            <?php if(!empty($day['spot'])): ?>
+                                                <span class="badge bg-light text-dark border"><i class="fas fa-map-marker-alt me-1"></i> <?= $day['spot'] ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-map fa-3x mb-3 opacity-25"></i><br>
+                            Chưa có dữ liệu lịch trình cho tour này.
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
 
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-white fw-bold text-uppercase small text-warning text-dark py-3">
-                    <i class="fas fa-concierge-bell me-2"></i>Dịch vụ / Chi phí vận hành
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold m-0 text-dark"><i class="fas fa-concierge-bell me-2"></i>Dịch vụ đã đặt (Điều hành)</h6>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-hover mb-0">
-                        <thead>
-                            <tr class="small text-muted">
+                        <thead class="bg-light small">
+                            <tr>
                                 <th class="ps-4">Loại</th>
                                 <th>Nhà cung cấp</th>
                                 <th>Chi tiết</th>
-                                <th class="text-end pe-4">Chi phí (Net)</th>
+                                <th class="text-end pe-4">Chi phí</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -165,18 +228,6 @@
                             <tr><td colspan="4" class="text-center py-3 text-muted small">Chưa đặt dịch vụ nào.</td></tr>
                             <?php endif; ?>
                         </tbody>
-                        <?php if($totalCost > 0): ?>
-                        <tfoot class="bg-light">
-                            <tr>
-                                <td colspan="3" class="text-end fw-bold">Tổng chi phí thực tế:</td>
-                                <td class="text-end pe-4 fw-bold text-danger fs-6"><?= number_format($totalCost) ?> ₫</td>
-                            </tr>
-                            <tr>
-                                <td colspan="3" class="text-end fw-bold text-success">Lợi nhuận ước tính:</td>
-                                <td class="text-end pe-4 fw-bold text-success fs-5"><?= number_format($booking['total_price'] - $totalCost) ?> ₫</td>
-                            </tr>
-                        </tfoot>
-                        <?php endif; ?>
                     </table>
                 </div>
             </div>

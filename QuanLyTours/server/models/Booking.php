@@ -6,44 +6,30 @@ class Booking {
         $this->conn = $db;
     }
 
+    // Sửa hàm getAll (Thêm t.min_deposit vào SELECT)
     public function getAll($keyword = null, $status = null, $dateFrom = null, $dateTo = null) {
-        // Kỹ thuật 1=1 để dễ nối chuỗi AND
-        $sql = "SELECT b.*, t.name as tour_name, t.code as tour_code 
+        // Thêm t.min_deposit
+        $sql = "SELECT b.*, 
+                       t.name as tour_name, t.code as tour_code, t.min_deposit, 
+                       c.full_name as customer_name, c.phone as customer_phone, c.id_card as customer_id_card 
                 FROM bookings b 
                 LEFT JOIN tours t ON b.tour_id = t.id 
+                LEFT JOIN customers c ON b.customer_id = c.id
                 WHERE 1=1"; 
         
-        $params = [];
-
-        // 1. Lọc từ khóa (Tìm trong cả Mã, Tên, SĐT, CCCD, Tên Tour)
+        // ... (Phần lọc bên dưới giữ nguyên không đổi) ...
+        // ... Copy lại đoạn code lọc từ bài trước ...
+        
         if (!empty($keyword)) {
-            $keyword = trim($keyword);
-            $sql .= " AND (b.booking_code LIKE ? OR b.customer_name LIKE ? OR b.customer_phone LIKE ? OR b.customer_id_card LIKE ? OR t.name LIKE ?)";
+            $sql .= " AND (b.booking_code LIKE ? OR c.full_name LIKE ? OR c.phone LIKE ?)";
             $searchTerm = "%$keyword%";
-            // Đẩy 5 tham số vào mảng
-            array_push($params, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm);
+            array_push($params, $searchTerm, $searchTerm, $searchTerm);
         }
-
-        // 2. Lọc trạng thái
-        if (!empty($status)) {
-            $sql .= " AND b.status = ?";
-            $params[] = $status;
-        }
-
-        // 3. Lọc ngày đi (Từ ngày)
-        if (!empty($dateFrom)) {
-            $sql .= " AND b.travel_date >= ?";
-            $params[] = $dateFrom;
-        }
-
-        // 4. Lọc ngày đi (Đến ngày)
-        if (!empty($dateTo)) {
-            $sql .= " AND b.travel_date <= ?";
-            $params[] = $dateTo;
-        }
+        if (!empty($status)) { $sql .= " AND b.status = ?"; $params[] = $status; }
+        if (!empty($dateFrom)) { $sql .= " AND b.travel_date >= ?"; $params[] = $dateFrom; }
+        if (!empty($dateTo)) { $sql .= " AND b.travel_date <= ?"; $params[] = $dateTo; }
 
         $sql .= " ORDER BY b.created_at DESC";
-
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

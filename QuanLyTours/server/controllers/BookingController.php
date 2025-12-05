@@ -75,12 +75,21 @@ class BookingController {
     }
 
     // 6. Chi tiết
-    public function detail() {
+   public function detail() {
         $id = $_GET['id'] ?? null;
         if ($id) {
             $db = (new Database())->getConnection();
             $booking = (new Booking($db))->getById($id);
             $tour = (new Tour($db))->getById($booking['tour_id']);
+            
+            // --- ADD THIS TO GET ITINERARY ---
+            $itineraries = (new Tour($db))->getItinerary($booking['tour_id']); 
+            // ---------------------------------
+
+            $opModel = new Operation($db);
+            $paxList = $opModel->getPaxByBooking($id);
+            $services = $opModel->getServicesByBooking($id);
+
             if (!$booking) { echo "Không tìm thấy!"; die(); }
             require_once __DIR__ . '/../../views/booking/detail.php';
         }
@@ -125,27 +134,38 @@ class BookingController {
     }
 
     // 10. Thu cọc
+    // Sửa hàm deposit
     public function deposit() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = $_POST['booking_id'];
             $amount = (float)$_POST['deposit_amount'];
             $total = (float)$_POST['total_price_hidden'];
+            $minPercent = (int)$_POST['min_deposit_hidden']; // Lấy % tối thiểu từ form
+
+            // 1. Tính số tiền tối thiểu phải đóng
+            $minAmount = ($total * $minPercent) / 100;
+
+            // 2. Validate: Cọc quá ít
+            if ($amount < $minAmount) {
+                echo "<script>alert('Lỗi: Số tiền cọc tối thiểu là " . number_format($minAmount) . "đ ($minPercent%)!'); window.history.back();</script>";
+                return;
+            }
+
+            // 3. Validate: Cọc quá nhiều
+            if ($amount > $total) {
+                echo "<script>alert('Lỗi: Tiền đóng vượt quá giá tour!'); window.history.back();</script>";
+                return;
+            }
+            
+            // ... (Đoạn code lưu DB giữ nguyên như cũ) ...
             $method = $_POST['payment_method'];
             $note = trim($_POST['payment_note']);
-
             $db = (new Database())->getConnection();
             $bookingModel = new Booking($db);
             $currentBooking = $bookingModel->getById($id);
             $newTotalDeposit = (float)$currentBooking['deposit_amount'] + $amount;
-
-            if ($newTotalDeposit > $total) {
-                echo "<script>alert('Tiền đóng vượt quá giá tour!'); window.history.back();</script>";
-                return;
-            }
-
             $newStatus = ($newTotalDeposit >= $total) ? 'completed' : 'deposited';
             $historyNote = $currentBooking['payment_note'] . " | " . date('d/m') . ": +" . number_format($amount) . " ($method) $note";
-            
             $bookingModel->updateDeposit($id, $newTotalDeposit, $method, $historyNote, $newStatus);
             header("Location: index.php?action=booking-list&msg=deposit_success");
         }
