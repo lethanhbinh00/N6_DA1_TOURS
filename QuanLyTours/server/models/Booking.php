@@ -8,7 +8,6 @@ class Booking {
 
     // 1. Lấy danh sách (Có bộ lọc)
     public function getAll($keyword = null, $status = null, $dateFrom = null, $dateTo = null) {
-        // [ĐÃ SỬA]: JOIN Customers để lấy thông tin mới nhất
         $sql = "SELECT b.*, t.name as tour_name, t.code as tour_code, t.min_deposit,
                        c.full_name as customer_name, c.phone as customer_phone, c.id_card as customer_id_card
                 FROM bookings b 
@@ -92,7 +91,7 @@ class Booking {
         } catch (Exception $e) { return $e->getMessage(); }
     }
 
-    // 4. [FIX] Lấy 1 Booking (Đã loại bỏ các cột cũ và dùng JOIN)
+    // 4. Lấy 1 Booking
     public function getById($id) {
         $stmt = $this->conn->prepare("SELECT * FROM bookings WHERE id = :id");
         $stmt->execute([':id' => $id]);

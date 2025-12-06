@@ -22,8 +22,8 @@
                 <div class="card-body p-4">
                     <form action="index.php?action=booking-store" method="POST">
                         
-                        <div class="row g-3 mb-4 border-bottom pb-3">
-                            <h5 class="text-success fw-bold"><i class="fas fa-suitcase me-2"></i>1. Thông tin Tour & Ngày đi</h5>
+                        <h5 class="text-success border-bottom pb-2 mb-3 fw-bold"><i class="fas fa-suitcase me-2"></i>1. Thông tin Tour & Số lượng</h5>
+                        <div class="row g-3 mb-4">
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">Chọn Tour <span class="text-danger">*</span></label>
                                 <select name="tour_id" id="tour_select" class="form-select" required onchange="updatePrice(this)">
@@ -47,13 +47,20 @@
                             </div>
                         </div>
 
-                        <div class="row g-3 mb-4">
-                            <h5 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="fas fa-user me-2"></i>2. Khách hàng / Trưởng đoàn</h5>
-                            
+                        <h5 class="text-success border-bottom pb-2 mb-3 fw-bold d-flex justify-content-between align-items-center">
+                            <span>2. Khách hàng / Trưởng đoàn</span>
+                            <a href="index.php?action=customer-list" target="_blank" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-user-plus me-1"></i> Tạo khách mới
+                            </a>
+                        </h5>
+
+                        <div class="row g-3 mb-4 bg-light p-3 rounded mx-0 border">
                             <div class="col-md-12 mb-3">
-                                <label class="form-label fw-bold text-primary small">Tìm khách hàng <span class="text-danger">*</span></label>
+                                <label class="form-label fw-bold text-primary small">
+                                    <i class="fas fa-search me-1"></i> Tìm khách hàng (Gõ Tên hoặc SĐT) <span class="text-danger">*</span>
+                                </label>
                                 <select name="customer_id" id="customer_select" class="form-select" required>
-                                    <option value="">-- Gõ Tên hoặc SĐT để tìm --</option>
+                                    <option value="">-- Gõ để tìm kiếm --</option>
                                     <?php foreach($customers as $cus): ?>
                                         <option value="<?= $cus['id'] ?>" 
                                                 data-fullname="<?= htmlspecialchars($cus['full_name']) ?>"
@@ -64,67 +71,44 @@
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
+                                <small class="text-muted fst-italic ps-1">Hệ thống sẽ tự điền thông tin bên dưới sau khi bạn chọn.</small>
                             </div>
 
-                            <div class="col-md-3">
+                            <div class="col-md-6">
                                 <label class="form-label fw-bold small">Họ tên</label>
-                                <input type="text" name="customer_name" id="customer_name" class="form-control bg-light" readonly required>
+                                <input type="text" name="customer_name" id="customer_name" class="form-control bg-white" readonly required>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-6">
                                 <label class="form-label fw-bold small">Số điện thoại</label>
-                                <input type="text" name="customer_phone" id="customer_phone" class="form-control bg-light" readonly required>
+                                <input type="text" name="customer_phone" id="customer_phone" class="form-control bg-white" readonly required>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold small">CCCD/CMND</label>
-                                <input type="text" name="customer_id_card" id="customer_id_card" class="form-control bg-light" readonly>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold small">Email</label>
-                                <input type="text" name="customer_email" id="customer_email" class="form-control bg-light" readonly>
-                            </div>
+                            <input type="hidden" name="customer_id_card" id="customer_id_card">
+                            <input type="hidden" name="customer_email" id="customer_email">
                         </div>
                         
-                        <h5 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="fas fa-truck-moving me-2"></i>3. Chi tiết Vận hành & Dịch vụ chính</h5>
+                        <h5 class="text-success border-bottom pb-2 mb-3 fw-bold">3. Dịch vụ chính & Điểm đón</h5>
                         <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <div class="row g-2">
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-bold small text-muted">NCC Vận chuyển (Xe/Bay)</label>
-                                        <select name="transport_supplier_id" class="form-select select2-basic">
-                                            <option value="">-- Chưa chọn NCC --</option>
-                                            <?php if(isset($suppliers)) foreach($suppliers as $s): if($s['type']=='transport'): ?>
-                                                <option value="<?= $s['id'] ?>"><?= $s['name'] ?></option>
-                                            <?php endif; endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-bold small text-muted">Số hiệu (Chuyến bay/Xe)</label>
-                                        <input type="text" name="flight_number" class="form-control" placeholder="VD: VN123 / 29A-12345">
-                                    </div>
-                                </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-muted">Xe / Vận chuyển</label>
+                                <select name="transport_supplier_id" class="form-select select2-basic">
+                                    <option value="">-- Chưa chọn NCC --</option>
+                                    <?php if(isset($suppliers)) foreach($suppliers as $s): if($s['type']=='transport'): ?>
+                                        <option value="<?= $s['id'] ?>"><?= $s['name'] ?></option>
+                                    <?php endif; endforeach; ?>
+                                </select>
                             </div>
-                            
-                            <div class="col-md-6">
-                                <div class="row g-2">
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-bold small text-muted">NCC Khách sạn / Lưu trú</label>
-                                        <select name="hotel_supplier_id" class="form-select select2-basic">
-                                            <option value="">-- Chưa chọn NCC --</option>
-                                            <?php if(isset($suppliers)) foreach($suppliers as $s): if($s['type']=='hotel'): ?>
-                                                <option value="<?= $s['id'] ?>"><?= $s['name'] ?></option>
-                                            <?php endif; endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-bold small text-muted">Chi tiết phòng</label>
-                                        <input type="text" name="room_details" class="form-control" placeholder="VD: 2 Phòng đôi">
-                                    </div>
-                                </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-muted">Khách sạn / Lưu trú</label>
+                                <select name="hotel_supplier_id" class="form-select select2-basic">
+                                    <option value="">-- Chưa chọn NCC --</option>
+                                    <?php if(isset($suppliers)) foreach($suppliers as $s): if($s['type']=='hotel'): ?>
+                                        <option value="<?= $s['id'] ?>"><?= $s['name'] ?></option>
+                                    <?php endif; endforeach; ?>
+                                </select>
                             </div>
-
-                            <div class="col-md-12">
-                                <label class="form-label fw-bold small text-muted">Điểm đón khách (Chi tiết)</label>
-                                <input type="text" name="pickup_location" class="form-control" placeholder="Ghi rõ địa điểm, thời gian đón khách...">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-muted">Điểm đón khách</label>
+                                <input type="text" name="pickup_location" class="form-control" placeholder="VD: 123 Nguyễn Trãi...">
                             </div>
                         </div>
 
@@ -132,7 +116,7 @@
                         <div class="row g-3 mb-4 bg-light p-3 rounded mx-0">
                             <div class="col-md-3">
                                 <label class="form-label fw-bold">Người lớn</label>
-                                <input type="number" id="adults" name="adults" class="form-control" value="" min="1" placeholder="1" required autocomplete="off" onchange="calcTotal()">
+                                <input type="number" id="adults" name="adults" class="form-control" value="" min="1" placeholder="0" required autocomplete="off" onchange="calcTotal()">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label fw-bold">Trẻ em</label>
@@ -152,7 +136,7 @@
 
                         <div class="text-end">
                             <a href="index.php?action=booking-list" class="btn btn-secondary me-2">Hủy bỏ</a>
-                            <button type="submit" class="btn btn-success px-4 fw-bold shadow-sm">
+                            <button type="submit" class="btn btn-success px-4 fw-bold">
                                 <i class="fas fa-paper-plane me-2"></i> Xác nhận Đặt Tour
                             </button>
                         </div>
@@ -166,20 +150,28 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function() {
-        // [FIX BROWSER CACHE]: Xóa giá trị cứng sau khi trình duyệt load
+        // [ULTIMATE FIX]: Ép giá trị rỗng sau khi trình duyệt load
         setTimeout(function() {
             $('#adults').val(''); 
         }, 10);
         
         // Kích hoạt Select2
-        $('#customer_select').select2({ placeholder: "-- Tìm khách hàng --", allowClear: true, width: '100%' });
-        $('#tour_select').select2({ placeholder: "-- Tìm kiếm Tour --", allowClear: true, width: '100%' });
+        $('#customer_select').select2({
+            placeholder: "-- Tìm kiếm Khách hàng --",
+            allowClear: true,
+            width: '100%'
+        });
+        $('#tour_select').select2({
+            placeholder: "-- Tìm kiếm Tour --",
+            allowClear: true,
+            width: '100%'
+        });
         $('.select2-basic').select2({ width: '100%' });
 
         // Sự kiện khi chọn khách hàng -> Điền thông tin vào input ẩn
         $('#customer_select').on('select2:select', function (e) {
             var option = e.params.data.element;
-            // Điền snapshot data vào các ô input readonly
+            
             $('#customer_name').val($(option).data('fullname'));
             $('#customer_phone').val($(option).data('phone'));
             $('#customer_email').val($(option).data('email'));
@@ -217,6 +209,7 @@
     }
 
     function calcTotal() {
+        // Lấy giá trị sau khi đã xóa cache
         const adults = parseInt(document.getElementById('adults').value) || 0;
         const children = parseInt(document.getElementById('children').value) || 0;
         const total = (adults * priceAdult) + (children * priceChild);
