@@ -1,5 +1,5 @@
 <?php
-// [QUAN TRỌNG] Khai báo tất cả các Models
+// [CẦN CÓ] Khai báo tất cả các Models
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../models/Booking.php';
 require_once __DIR__ . '/../models/Tour.php';
@@ -145,7 +145,7 @@ class BookingController {
             $total = (float)$_POST['total_price_hidden'];
             $method = $_POST['payment_method'];
             $note = trim($_POST['payment_note']);
-            $minPercent = (int)$_POST['min_deposit_hidden']; 
+            $minPercent = (int)($_POST['min_deposit_hidden'] ?? 0); 
             $userId = $_SESSION['user_id'] ?? 1;
 
             $db = (new Database())->getConnection();
@@ -314,23 +314,26 @@ class BookingController {
     }
 
 
-    // 19. Hàm phụ trợ xử lý Create/Update
+    // 19. Hàm phụ trợ xử lý Create/Update (QUAN TRỌNG NHẤT)
     private function processForm($mode) {
         $db = (new Database())->getConnection(); $bookingModel = new Booking($db);
         
-        // [FIX LỖI SQL] Chuyển chuỗi rỗng thành NULL cho các cột INT
-        $transportId = empty($_POST['transport_supplier_id']) ? null : $_POST['transport_supplier_id'];
-        $hotelId     = empty($_POST['hotel_supplier_id']) ? null : $_POST['hotel_supplier_id'];
+        // [FIX LỖI SQL] Chuyển chuỗi rỗng ('') thành NULL cho các cột INT
+        // Nếu giá trị là '' (chuỗi rỗng), ta ép nó thành NULL
+        $transportId = ($_POST['transport_supplier_id'] === '') ? null : $_POST['transport_supplier_id'];
+        $hotelId     = ($_POST['hotel_supplier_id'] === '') ? null : $_POST['hotel_supplier_id'];
         $customerId  = $_POST['customer_id'];
 
         $data = [
             'tour_id' => $_POST['tour_id'], 
-            'transport_id' => $transportId,  
-            'hotel_id' => $hotelId,      
+            'transport_id' => $transportId,  // FIX APPLIED
+            'hotel_id' => $hotelId,      // FIX APPLIED
             'pickup_location' => trim($_POST['pickup_location']),
             'travel_date' => $_POST['travel_date'], 
             'return_date' => $_POST['return_date'] ?? null, 
             'customer_id' => $customerId,
+            // Thêm các trường Snapshot (tên khách, sđt) vào data dù không dùng trong model create/update
+            // để đảm bảo array structure cho logic phức tạp hơn
             'adults' => (int)$_POST['adults'], 
             'children' => (int)$_POST['children'], 
             'total_price' => $_POST['total_price'], 
