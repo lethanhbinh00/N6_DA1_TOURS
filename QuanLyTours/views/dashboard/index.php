@@ -23,7 +23,7 @@
             <div class="card border-0 shadow-sm h-100 p-3 border-start border-4 border-primary">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted mb-1 small fw-bold">ĐƠN HÀNG</p>
+                        <p class="text-muted mb-1 small fw-bold">TỔNG ĐƠN HÀNG</p>
                         <h4 class="fw-bold text-primary mb-0"><?= $totalBookings ?? 0 ?></h4>
                     </div>
                     <i class="fas fa-shopping-cart fa-2x text-primary opacity-25"></i>
@@ -93,19 +93,19 @@
                         <tbody>
                             <?php if(!empty($recentBookings)): foreach($recentBookings as $bk): ?>
                             <tr>
-                                <td class="fw-bold text-primary"><?= $bk['booking_code'] ?></td>
-                                <td><?= htmlspecialchars($bk['customer_name']) ?></td>
-                                <td class="text-truncate" style="max-width: 120px;"><?= htmlspecialchars($bk['tour_name']) ?></td>
+                                <td class="fw-bold text-primary"><?= htmlspecialchars($bk['booking_code'] ?? '---') ?></td>
+                                <td><?= htmlspecialchars($bk['customer_name'] ?? '---') ?></td>
+                                <td class="text-truncate" style="max-width: 120px;"><?= htmlspecialchars($bk['tour_name'] ?? 'Tour bị xóa') ?></td>
                                 <td>
                                     <?php 
                                         $s = $bk['status'];
-                                        $badge = 'secondary';
-                                        if($s=='confirmed') $badge='primary';
-                                        if($s=='deposited') $badge='warning';
-                                        if($s=='completed') $badge='success';
-                                        if($s=='cancelled') $badge='danger';
+                                        $badge = 'secondary'; $label = 'Mới';
+                                        if($s=='confirmed') { $badge='primary'; $label = 'Xác nhận'; }
+                                        if($s=='deposited') { $badge='warning text-dark'; $label = 'Đã cọc'; }
+                                        if($s=='completed') { $badge='success'; $label = 'Hoàn tất'; }
+                                        if($s=='cancelled') { $badge='danger'; $label = 'Hủy'; }
                                     ?>
-                                    <span class="badge bg-<?= $badge ?>"><?= $s ?></span>
+                                    <span class="badge bg-<?= $badge ?>"><?= $label ?></span>
                                 </td>
                             </tr>
                             <?php endforeach; endif; ?>
@@ -126,13 +126,13 @@
                             <?php foreach($upcomingTours as $up): ?>
                             <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                                 <div>
-                                    <div class="fw-bold"><?= htmlspecialchars($up['tour_name']) ?></div>
+                                    <div class="fw-bold"><?= htmlspecialchars($up['tour_name'] ?? '---') ?></div>
                                     <small class="text-muted">
                                         <i class="far fa-calendar-alt me-1"></i> <?= date('d/m', strtotime($up['travel_date'])) ?> 
-                                        • <i class="fas fa-users me-1"></i> <?= $up['total_pax'] ?> khách
+                                        • <i class="fas fa-users me-1"></i> <?= $up['total_pax'] ?? 0 ?> khách
                                     </small>
                                 </div>
-                                <a href="#" class="btn btn-sm btn-outline-primary"><i class="fas fa-arrow-right"></i></a>
+                                <a href="index.php?action=booking-ops&id=<?= $up['id'] ?? 0 ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-arrow-right"></i></a>
                             </li>
                             <?php endforeach; ?>
                         </ul>
