@@ -91,7 +91,6 @@
             </a>
             <div id="menu-tour" class="submenu <?= (strpos($act, 'tour')!==false || strpos($act, 'index')!==false)?'show':'' ?>">
                 <a href="index.php?action=index" class="nav-link text-white">Danh sách Tour</a>
-                <a href="#" class="nav-link">Tour Theo Yêu Cầu</a>
             </div>
         </li>
 

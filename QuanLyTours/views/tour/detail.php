@@ -147,7 +147,71 @@
                                     </div>
                                 </div>
                             <?php else: ?>
-                                <div class="text-center py-5 text-muted">Chưa có thông tin chính sách.</div>
+                                <div class="text-start py-5 text-muted">
+                                    <h3 class="text-center text-dark mb-4">CHÍNH SÁCH & ĐIỀU KHOẢN TOUR DU LỊCH</h3>
+                                    <hr>
+                                    
+                                    <h4>I. ĐĂNG KÝ VÀ THANH TOÁN</h4>
+                                    <ul class="list-unstyled">
+                                        <li>
+                                            <strong>1. Xác nhận Đăng ký:</strong> Việc đăng ký tour chỉ có hiệu lực khi Quý khách cung cấp đầy đủ thông tin cá nhân chính xác và thực hiện đặt cọc theo quy định.
+                                        </li>
+                                        <li>
+                                            <strong>2. Giá Tour Bao Gồm:</strong> Chi tiết các dịch vụ đã bao gồm (vé máy bay, khách sạn, bữa ăn, phí tham quan, bảo hiểm, v.v.) được ghi rõ trong chương trình tour cụ thể.
+                                        </li>
+                                        <li>
+                                            <strong>3. Đặt Cọc:</strong> Quý khách phải thanh toán đặt cọc **[X]%** tổng giá trị tour ngay khi đăng ký để giữ chỗ.
+                                        </li>
+                                        <li>
+                                            <strong>4. Thanh toán Phần còn lại:</strong> Số tiền còn lại phải được thanh toán chậm nhất **[Y] ngày** trước ngày khởi hành. Nếu quá thời hạn này, tour sẽ tự động bị hủy và Quý khách mất tiền đặt cọc.
+                                        </li>
+                                    </ul>
+
+                                    <h4>II. CHÍNH SÁCH HỦY TOUR VÀ HOÀN TIỀN</h4>
+                                    <p>Chính sách này áp dụng cho việc hủy tour từ phía khách hàng (không bao gồm trường hợp bất khả kháng):</p>
+                                    <table class="table table-bordered table-sm">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>Thời gian Hủy (So với Ngày Khởi hành)</th>
+                                                <th>Phí Hủy Tour (Trên Tổng Giá Trị Tour)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Trước 30 ngày</td>
+                                                <td>Phí hành chính: 10%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Từ 15 đến 29 ngày</td>
+                                                <td>30%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Từ 07 đến 14 ngày</td>
+                                                <td>50%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Trong vòng 07 ngày hoặc vắng mặt</td>
+                                                <td>100%</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <p class="small text-danger"><em>* Lưu ý: Thời gian hủy được tính theo ngày làm việc (trừ Thứ 7, Chủ Nhật và ngày lễ).</em></p>
+
+                                    <h4>III. TRÁCH NHIỆM VÀ QUYỀN HẠN</h4>
+                                    <ul class="list-unstyled">
+                                        <li>
+                                            <strong>1. Trách nhiệm của Công ty:</strong> Cung cấp đầy đủ và đúng dịch vụ theo chương trình đã cam kết. Giải quyết các sự cố phát sinh trên cơ sở hợp tác, ưu tiên quyền lợi khách hàng.
+                                        </li>
+                                        <li>
+                                            <strong>2. Trách nhiệm của Khách hàng:</strong> Đảm bảo hộ chiếu (còn hạn trên 6 tháng) và các giấy tờ tùy thân, thị thực (visa) hợp lệ. Tuân thủ pháp luật nước sở tại và sự hướng dẫn của trưởng đoàn.
+                                        </li>
+                                        <li>
+                                            <strong>3. Trường hợp Bất khả kháng:</strong> Nếu tour bị hủy hoặc thay đổi do thiên tai, dịch bệnh, chiến tranh hoặc các yếu tố khách quan khác, hai bên sẽ thỏa thuận về việc hoàn tiền hoặc chuyển sang tour khác. Công ty được miễn trừ trách nhiệm bồi thường thiệt hại trong các trường hợp này.
+                                        </li>
+                                    </ul>
+
+                                    <p class="mt-4"><em>Bằng việc đăng ký tour, Quý khách được xem là đã đọc, hiểu rõ và đồng ý với toàn bộ Chính sách & Điều khoản trên.</em></p>
+                                </div>
                             <?php endif; ?>
                         </div>
                     </div>
