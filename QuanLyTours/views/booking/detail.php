@@ -1,176 +1,194 @@
 <?php require_once __DIR__ . '/../layouts/header.php'; ?>
 
+<style>
+    .card-title-lg { font-size: 1.1rem; font-weight: bold; }
+    .detail-label { font-weight: bold; color: #6c757d; font-size: 0.85rem; }
+    .detail-value { font-weight: 600; color: #343a40; font-size: 1rem; }
+    .transaction-table th { font-size: 0.8rem; }
+    .transaction-table td { font-size: 0.9rem; }
+    .service-table th { font-size: 0.8rem; }
+    .btn-icon { width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+</style>
+
 <div class="container-fluid p-4">
     
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <a href="index.php?action=booking-list" class="text-decoration-none text-secondary mb-1 d-block">
-                <i class="fas fa-arrow-left"></i> Quay lại danh sách
-            </a>
-            <h4 class="fw-bold text-primary m-0">
-                Hồ sơ Booking: <span class="text-dark">#<?= htmlspecialchars($booking['booking_code'] ?? '---') ?></span>
-            </h4>
-            <span class="text-muted small">Ngày tạo: <?= date('d/m/Y H:i', strtotime($booking['created_at'] ?? 'now')) ?></span>
-        </div>
-
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="fw-bold text-primary mb-0">
+            <i class="fas fa-file-invoice me-2"></i>Hồ sơ Booking: <?= htmlspecialchars($booking['booking_code'] ?? 'N/A') ?>
+        </h3>
         <div class="d-flex gap-2">
-            <div class="btn-group">
-                <button type="button" class="btn btn-outline-secondary dropdown-toggle shadow-sm" data-bs-toggle="dropdown">
-                    <i class="fas fa-print me-2"></i>In ấn
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="index.php?action=booking-invoice&id=<?= $booking['id'] ?? 0 ?>" target="_blank">In Hóa đơn</a></li>
-                    <li><a class="dropdown-item" href="index.php?action=booking-contract&id=<?= $booking['id'] ?? 0 ?>" target="_blank">In Hợp đồng</a></li>
-                </ul>
-            </div>
-            <a href="index.php?action=booking-ops&id=<?= $booking['id'] ?? 0 ?>" class="btn btn-dark shadow-sm">
-                <i class="fas fa-list-ul me-2"></i>Điều hành
-            </a>
-            <?php if(($booking['status'] ?? 'cancelled') != 'cancelled'): ?>
-            <a href="index.php?action=booking-edit&id=<?= $booking['id'] ?? 0 ?>" class="btn btn-primary shadow-sm">
-                <i class="fas fa-edit me-2"></i>Sửa thông tin
-            </a>
-            <?php endif; ?>
+            <a href="index.php?action=booking-list" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i> Quay lại danh sách</a>
+            <a href="index.php?action=booking-ops&id=<?= $booking['id'] ?? 0 ?>" class="btn btn-info btn-sm text-white"><i class="fas fa-cogs me-1"></i> Điều hành</a>
+            <a href="index.php?action=booking-edit&id=<?= $booking['id'] ?? 0 ?>" class="btn btn-warning btn-sm text-dark"><i class="fas fa-edit me-1"></i> Sửa thông tin</a>
+            <a href="index.php?action=booking-invoice&id=<?= $booking['id'] ?? 0 ?>" target="_blank" class="btn btn-success btn-sm"><i class="fas fa-print me-1"></i> In Hóa đơn</a>
         </div>
     </div>
-
-    <div class="row g-4">
-        
-        <div class="col-lg-4">
-            
-            <div class="card shadow-sm border-0 mb-4">
+    
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100 border-0">
                 <div class="card-body">
-                    <h6 class="fw-bold text-secondary text-uppercase small mb-3">Tình hình tài chính</h6>
+                    <h5 class="card-title-lg text-secondary mb-3"><i class="fas fa-chart-line me-2"></i>Tình hình Tài chính</h5>
                     
-                    <?php 
-                        $st = $booking['status'] ?? 'new';
-                        $class = ($st=='confirmed')?'primary':(($st=='deposited')?'warning':(($st=='completed')?'success':'secondary'));
-                    ?>
-                    <div class="mb-3 d-flex justify-content-between align-items-center">
-                        <span>Trạng thái:</span>
-                        <span class="badge bg-<?= $class ?> fs-6"><?= ucfirst($st) ?></span>
+                    <div class="mb-3">
+                        <span class="detail-label">Trạng thái:</span>
+                        <?php 
+                            $st = $booking['status'] ?? 'new';
+                            $badge = 'secondary'; $label = 'Mới';
+                            if($st=='confirmed') { $badge='primary'; $label = 'Đã xác nhận'; }
+                            if($st=='deposited') { $badge='warning text-dark'; $label = 'Đã cọc'; }
+                            if($st=='completed') { $badge='success'; $label = 'Hoàn tất'; }
+                            if($st=='cancelled') { $badge='danger'; $label = 'Đã hủy'; }
+                        ?>
+                        <span class="badge bg-<?= $badge ?> fs-6 p-2"><?= $label ?></span>
                     </div>
 
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between px-0">
-                            <span class="text-muted">Tổng giá trị:</span>
-                            <span class="fw-bold fs-5 text-primary"><?= number_format($booking['total_price'] ?? 0) ?> ₫</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between px-0">
-                            <span class="text-muted">Đã thanh toán:</span>
-                            <span class="fw-bold text-success"><?= number_format($booking['deposit_amount'] ?? 0) ?> ₫</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between px-0">
-                            <span class="text-muted">Còn nợ:</span>
-                            <span class="fw-bold text-danger"><?= number_format(($booking['total_price'] ?? 0) - ($booking['deposit_amount'] ?? 0)) ?> ₫</span>
-                        </li>
-                    </ul>
-                    
-                    <div class="mt-4">
-                        <h6 class="small fw-bold text-muted border-bottom pb-2">LỊCH SỬ GIAO DỊCH CHI TIẾT</h6>
-                        <?php if(!empty($payments)): ?>
-                            <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
-                                <table class="table table-sm small mb-0 align-middle">
-                                    <thead class="table-light"><tr><th>Ngày</th><th>Số tiền</th><th>HT</th><th>NV Thu</th><th class="text-center" width="80">Xóa</th></tr></thead>
-                                    <tbody>
-                                        <?php foreach($payments as $pay): ?>
-                                        <tr>
-                                            <td><?= date('d/m H:i', strtotime($pay['created_at'])) ?></td>
-                                            <td class="text-end fw-bold text-success">+<?= number_format($pay['amount']) ?></td>
-                                            <td><?= htmlspecialchars($pay['payment_method'] ?? '---') ?></td>
-                                            <td><?= htmlspecialchars($pay['collector_name'] ?? 'Hệ thống') ?></td>
-                                            <td class="text-center">
-                                                <a href="index.php?action=payment-receipt&id=<?= $pay['id'] ?>&bid=<?= $booking['id'] ?>" class="text-secondary me-2" title="In phiếu thu"><i class="fas fa-print"></i></a>
-                                                <a href="index.php?action=payment-delete&id=<?= $pay['id'] ?>&bid=<?= $booking['id'] ?>" class="text-danger" onclick="return confirm('Xóa khoản thu này?')"><i class="fas fa-times"></i></a>
-                                            </td>
-                                        </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <?php else: ?>
-                            <div class="text-center text-muted small fst-italic py-2">Chưa có giao dịch nào.</div>
-                        <?php endif; ?>
+                    <div class="border-top pt-3 mt-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="detail-label">Tổng giá trị:</span>
+                            <span class="detail-value text-primary"><?= number_format($booking['total_price'] ?? 0) ?> ₫</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="detail-label">Đã thanh toán:</span>
+                            <span class="detail-value text-success"><?= number_format($booking['deposit_amount'] ?? 0) ?> ₫</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-top mt-2 pt-2">
+                            <span class="detail-label fs-5 text-danger">CÒN PHẢI THU:</span>
+                            <span class="detail-value fs-5 text-danger"><?= number_format(($booking['total_price'] ?? 0) - ($booking['deposit_amount'] ?? 0)) ?> ₫</span>
+                        </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white fw-bold text-uppercase small text-secondary py-3">Khách hàng đại diện</div>
-                <div class="card-body">
-                    <h5 class="fw-bold text-dark mb-1"><?= htmlspecialchars($booking['customer_name'] ?? '---') ?></h5>
-                    <p class="text-muted small mb-3"><i class="fas fa-id-card me-2"></i> <?= htmlspecialchars($booking['customer_id_card'] ?? '---') ?></p>
-                    
-                    <hr class="my-2">
-                    <div class="my-2"><i class="fas fa-phone me-2 text-secondary"></i> <?= htmlspecialchars($booking['customer_phone'] ?? '---') ?></div>
-                    <div class="my-2"><i class="fas fa-envelope me-2 text-secondary"></i> <?= htmlspecialchars($booking['customer_email'] ?? '---') ?></div>
-                    
-                    <?php if(!empty($booking['note'])): ?>
-                    <div class="alert alert-warning mt-3 mb-0 small">
-                        <i class="fas fa-sticky-note me-1"></i> <b>Ghi chú:</b> <?= htmlspecialchars($booking['note'] ?? '') ?>
-                    </div>
-                    <?php endif; ?>
                 </div>
             </div>
         </div>
-
-        <div class="col-lg-8">
-            
-            <div class="card shadow-sm border-0 mb-4">
+        
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100 border-0">
                 <div class="card-body">
-                    <div class="d-flex align-items-start">
-                        <div class="bg-light p-3 rounded me-3 text-center" style="min-width: 80px;">
-                            <i class="fas fa-suitcase fa-2x text-primary opacity-50"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h4 class="fw-bold mb-1"><?= htmlspecialchars($tour['name'] ?? '---') ?></h4>
-                            </div>
-                    </div>
+                    <h5 class="card-title-lg text-secondary mb-3"><i class="fas fa-user-circle me-2"></i>Khách hàng Đại diện</h5>
+                    
+                    <p class="detail-label mb-1">Họ tên:</p>
+                    <p class="detail-value"><?= htmlspecialchars($booking['customer_name'] ?? 'Khách lẻ') ?></p>
+                    
+                    <p class="detail-label mb-1">Điện thoại:</p>
+                    <p class="detail-value"><?= htmlspecialchars($booking['customer_phone'] ?? '---') ?></p>
+                    
+                    <p class="detail-label mb-1">CCCD/Email:</p>
+                    <p class="detail-value"><?= htmlspecialchars($booking['customer_id_card'] ?? '---') ?> / <?= htmlspecialchars($booking['customer_email'] ?? '---') ?></p>
                 </div>
             </div>
-
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white py-3">
-                    <h6 class="fw-bold m-0 text-primary"><i class="fas fa-map-marked-alt me-2"></i>Lịch trình chi tiết</h6>
-                </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100 border-0">
                 <div class="card-body">
-                    <?php if(!empty($itineraries)): ?>
-                        <div class="timeline">
-                            <?php foreach($itineraries as $day): ?>
-                                <div class="d-flex mb-4">
-                                    <div class="flex-shrink-0 text-center" style="width: 60px;">
-                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold mx-auto" style="width: 40px; height: 40px;">N<?= $day['day_number'] ?></div>
-                                        <small class="text-muted d-block mt-1 fw-bold">Ngày</small>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3 pb-3 border-bottom border-light">
-                                        <h6 class="fw-bold text-uppercase text-dark mb-1"><?= htmlspecialchars($day['title'] ?? '') ?></h6>
-                                        <div class="bg-light p-3 rounded text-secondary mb-2" style="font-size: 0.95rem; line-height: 1.6;">
-                                            <?= nl2br(htmlspecialchars($day['description'] ?? '')) ?>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="text-center py-5 text-muted">
-                            <i class="fas fa-map fa-3x mb-3 opacity-25"></i><br>
-                            Chưa có dữ liệu lịch trình cho tour này.
-                        </div>
-                    <?php endif; ?>
+                    <h5 class="card-title-lg text-secondary mb-3"><i class="fas fa-info-circle me-2"></i>Chi tiết Tour & Vận hành</h5>
+                    
+                    <p class="detail-label mb-1">Tour:</p>
+                    <p class="detail-value text-dark"><?= htmlspecialchars($tour['code'] ?? '') ?> - <?= htmlspecialchars($tour['name'] ?? 'Tour đã bị xóa') ?></p>
+                    
+                    <p class="detail-label mb-1">Ngày khởi hành:</p>
+                    <?php 
+                        $travelDate = $booking['travel_date'] ?? null;
+                        $returnDate = $booking['return_date'] ?? null;
+                        $displayTravel = $travelDate ? date('d/m/Y', strtotime($travelDate)) : '---';
+                        $displayReturn = $returnDate ? date('d/m/Y', strtotime($returnDate)) : '';
+                    ?>
+                    <p class="detail-value text-dark">
+                        <?= $displayTravel ?>
+                        <?php if(!empty($displayReturn)): ?>
+                            (Đến <?= $displayReturn ?>)
+                        <?php endif; ?>
+                    </p>
+                    
+                    <p class="detail-label mb-1">Vận chuyển/Điểm đón:</p>
+                    <p class="detail-value text-dark">
+                        <?= htmlspecialchars($booking['flight_number'] ?? $booking['transport_supplier_id'] ?? '---') ?>
+                        <div class="small text-muted">Đón tại: <?= htmlspecialchars($booking['pickup_location'] ?? '---') ?></div>
+                    </p>
+
+                    <p class="detail-label mb-1">Ghi chú Booking:</p>
+                    <p class="text-muted small border p-2 bg-light rounded"><?= nl2br(htmlspecialchars($booking['note'] ?? 'Không có ghi chú')) ?></p>
                 </div>
             </div>
-
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3">
-                    <h6 class="fw-bold m-0 text-dark"><i class="fas fa-concierge-bell me-2"></i>Dịch vụ đã đặt (Costing)</h6>
-                </div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-md-5">
+            <div class="card shadow-sm h-100 border-0">
                 <div class="card-body p-0">
-                    <table class="table table-hover mb-0">
-                        <tbody><tr><td colspan="4" class="text-center py-3 text-muted small">Thông tin chi phí vận hành cần xem ở trang Điều hành.</td></tr></tbody>
+                    <h5 class="card-title-lg text-secondary p-3 border-bottom mb-0"><i class="fas fa-history me-2"></i>Lịch sử giao dịch</h5>
+                    <table class="table table-striped table-hover transaction-table mb-0">
+                        <thead class="bg-light">
+                            <tr><th>Ngày</th><th>Số tiền</th><th>HT</th><th>NV Thu</th><th>#</th></tr>
+                        </thead>
+                        <tbody>
+                            <?php if(!empty($payments)): foreach($payments as $p): ?>
+                            <tr>
+                                <?php 
+                                    $pDate = $p['payment_date'] ?? null; 
+                                    // Kiểm tra pDate có phải là NULL/rỗng hoặc ngày không hợp lệ không
+                                    if (empty($pDate) || $pDate === '0000-00-00 00:00:00') {
+                                        $displayDate = '---';
+                                    } else {
+                                        // Sử dụng strtotime an toàn
+                                        $displayDate = date('d/m/y H:i', strtotime($pDate)); 
+                                    }
+                                    
+                                    $paymentId = $p['id'] ?? 0;
+                                    $amount = number_format($p['amount'] ?? 0);
+                                ?>
+                                <td><?= $displayDate ?></td>
+                                <td class="fw-bold text-success">+<?= $amount ?>₫</td>
+                                <td><?= htmlspecialchars($p['payment_method'] ?? '---') ?></td>
+                                <td><?= htmlspecialchars($p['collector_name'] ?? 'Admin') ?></td>
+                                <td class="text-nowrap">
+                                    <a href="index.php?action=receipt&id=<?= $paymentId ?>" target="_blank" class="btn btn-sm btn-outline-info btn-icon" title="In phiếu thu"><i class="fas fa-receipt"></i></a>
+                                    
+                                    <?php if(($_SESSION['user_role'] ?? 'guest') === 'admin'): ?>
+                                    <a href="index.php?action=payment-delete&id=<?= $paymentId ?>&bid=<?= $booking['id'] ?? 0 ?>" 
+                                       onclick="return confirm('CẢNH BÁO: Bạn chắc chắn muốn xóa giao dịch này (<?= $amount ?>₫)? Số tiền cọc sẽ bị trừ đi.')" 
+                                       class="btn btn-sm btn-outline-danger btn-icon" title="Xóa giao dịch"><i class="fas fa-trash-alt"></i></a>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; else: ?>
+                            <tr><td colspan="5" class="text-center text-muted py-3">Chưa có giao dịch nào.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
                     </table>
                 </div>
             </div>
-
+        </div>
+        
+        <div class="col-md-7">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-body p-0">
+                    <h5 class="card-title-lg text-secondary p-3 border-bottom mb-0 d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-handshake me-2"></i>Dịch vụ đã đặt (Costing)</span>
+                        <a href="index.php?action=booking-ops&id=<?= $booking['id'] ?? 0 ?>" class="btn btn-sm btn-primary">Chỉnh sửa Dịch vụ</a>
+                    </h5>
+                    <table class="table table-sm table-hover service-table mb-0">
+                        <thead class="bg-light">
+                            <tr><th>Loại</th><th>NCC/Mô tả</th><th>Chi phí (VNĐ)</th></tr>
+                        </thead>
+                        <tbody>
+                            <?php if(!empty($services)): foreach($services as $s): ?>
+                            <tr>
+                                <td class="fw-bold"><?= htmlspecialchars(strtoupper($s['service_type'] ?? '---')) ?></td>
+                                <td>
+                                    <div class="fw-bold text-dark"><?= htmlspecialchars($s['supplier_name'] ?? 'N/A') ?></div>
+                                    <div class="small text-muted"><?= htmlspecialchars($s['description'] ?? '---') ?></div>
+                                </td>
+                                <td class="text-danger fw-bold"><?= number_format($s['cost'] ?? 0) ?></td>
+                            </tr>
+                            <?php endforeach; else: ?>
+                            <tr><td colspan="3" class="text-center text-muted py-3">Chưa có chi phí dịch vụ nào được ghi nhận.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>

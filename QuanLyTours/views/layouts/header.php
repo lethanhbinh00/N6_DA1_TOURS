@@ -10,21 +10,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> 
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <style>
         :root { --sidebar-bg: #2c3e50; --sidebar-color: #ecf0f1; --primary-color: #3498db; --active-bg: #34495e; }
         body { font-family: 'Inter', sans-serif; background-color: #f4f6f9; font-size: 0.9rem; }
         
-        /* Sidebar Styling - Z-Index 2000 để nổi lên trên cùng */
+        /* Sidebar Styling */
         .sidebar { 
             width: 260px; height: 100vh; position: fixed; top: 0; left: 0;
             background: var(--sidebar-bg); color: var(--sidebar-color); 
             overflow-y: auto; z-index: 2000; transition: all 0.3s;
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         }
-        
         .sidebar-header { 
             padding: 20px; 
             border-bottom: 1px solid rgba(255,255,255,0.1); 

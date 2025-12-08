@@ -296,9 +296,16 @@ class BookingController {
         }
         $id = $_GET['id']; $bid = $_GET['bid'];
         $db = (new Database())->getConnection();
+        
+        $paymentInfo = (new Booking($db))->getPaymentById($id); 
         $result = (new Booking($db))->deletePayment($id);
         
         if ($result === "success") {
+            $logModel = new SystemLog($db);
+            $description = "Đã hủy giao dịch thu tiền: -".number_format($paymentInfo['amount'] ?? 0). " VNĐ. Mã BK: {$paymentInfo['booking_code']}";
+            $logModel->logAction('DELETE', 'Payment', $paymentInfo['id'] ?? 0, $description);
+
+            // [REDIRECT VỀ TRANG CHI TIẾT]
             header("Location: index.php?action=booking-detail&id=$bid&msg=payment_deleted");
         } else {
             echo "<script>alert('Lỗi: $result'); window.history.back();</script>";
@@ -308,10 +315,12 @@ class BookingController {
     // 18. In Phiếu thu lẻ
     public function receipt() {
         $id = $_GET['id']; $db = (new Database())->getConnection();
+        // Cần đảm bảo hàm getPaymentById trong Model Booking lấy đủ thông tin
         $payment = (new Booking($db))->getPaymentById($id);
         if (!$payment) { echo "Không tìm thấy phiếu!"; die(); }
         require_once __DIR__ . '/../../views/booking/receipt.php';
     }
+
 
 
     // 19. Hàm phụ trợ xử lý Create/Update (QUAN TRỌNG NHẤT)
@@ -319,25 +328,34 @@ class BookingController {
         $db = (new Database())->getConnection(); $bookingModel = new Booking($db);
         
         // [FIX LỖI SQL] Chuyển chuỗi rỗng ('') thành NULL cho các cột INT
-        // Nếu giá trị là '' (chuỗi rỗng), ta ép nó thành NULL
-        $transportId = ($_POST['transport_supplier_id'] === '') ? null : $_POST['transport_supplier_id'];
-        $hotelId     = ($_POST['hotel_supplier_id'] === '') ? null : $_POST['hotel_supplier_id'];
+        $transportId = empty($_POST['transport_supplier_id']) ? null : $_POST['transport_supplier_id'];
+        $hotelId     = empty($_POST['hotel_supplier_id']) ? null : $_POST['hotel_supplier_id'];
         $customerId  = $_POST['customer_id'];
 
+        // KHAI BÁO CÁC TRƯỜNG DỮ LIỆU CẦN LƯU (Snapshot + Vận hành)
         $data = [
-            'tour_id' => $_POST['tour_id'], 
-            'transport_id' => $transportId,  // FIX APPLIED
-            'hotel_id' => $hotelId,      // FIX APPLIED
-            'pickup_location' => trim($_POST['pickup_location']),
-            'travel_date' => $_POST['travel_date'], 
-            'return_date' => $_POST['return_date'] ?? null, 
-            'customer_id' => $customerId,
-            // Thêm các trường Snapshot (tên khách, sđt) vào data dù không dùng trong model create/update
-            // để đảm bảo array structure cho logic phức tạp hơn
-            'adults' => (int)$_POST['adults'], 
-            'children' => (int)$_POST['children'], 
-            'total_price' => $_POST['total_price'], 
-            'note' => $_POST['note']
+            'tour_id'           => $_POST['tour_id'], 
+            
+            // Customer Snapshot (Cần lưu lại để in ấn và lịch sử)
+            'customer_id'       => $customerId,
+            'customer_name'     => $_POST['customer_name'] ?? '',
+            'customer_id_card'  => $_POST['customer_id_card'] ?? '',
+            'customer_phone'    => $_POST['customer_phone'] ?? '',
+            'customer_email'    => $_POST['customer_email'] ?? '',
+
+            // Dịch vụ chính / Vận hành
+            'transport_id'      => $transportId,  
+            'hotel_id'          => $hotelId,
+            'pickup_location'   => trim($_POST['pickup_location'] ?? ''),
+            'flight_number'     => $_POST['flight_number'] ?? '',
+            'room_details'      => $_POST['room_details'] ?? '',
+
+            'travel_date'       => $_POST['travel_date'], 
+            'return_date'       => $_POST['return_date'] ?? null, 
+            'adults'            => (int)$_POST['adults'], 
+            'children'          => (int)$_POST['children'], 
+            'total_price'       => $_POST['total_price'], 
+            'note'              => $_POST['note']
         ];
 
         if (empty($data['customer_id'])) { echo "<script>alert('Vui lòng chọn khách hàng!'); window.history.back();</script>"; return; }
@@ -362,5 +380,7 @@ class BookingController {
             else echo "Lỗi cập nhật: " . $result;
         }
     }
+    // 10. [FIXED] Xóa giao dịch thanh toán (Redirect về Detail)
+    
 }
 ?>

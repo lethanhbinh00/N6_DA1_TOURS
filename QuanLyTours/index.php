@@ -122,7 +122,17 @@ switch ($action) {
     case 'supplier-store':  $supController->store(); break;
     case 'supplier-delete': $supController->delete(); break;
 
-    
+    case 'receipt':
+        // Xử lý In Phiếu thu lẻ
+        $bookingController->receipt();
+        break;
+
+    case 'payment-delete':
+        // Xử lý Xóa giao dịch thanh toán (Cần RBAC)
+        // Nếu bạn đã có hàm checkRole(), hãy sử dụng nó ở đây:
+        // checkRole(['admin']); 
+        $bookingController->paymentDelete();
+        break;
 
     // --- DEFAULT ---
     default:

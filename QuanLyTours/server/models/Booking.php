@@ -7,7 +7,8 @@ class Booking {
     }
 
     // 1. Lấy danh sách (Có bộ lọc)
-    public function getAll($keyword = null, $status = null, $dateFrom = null, $dateTo = null) {
+   public function getAll($keyword = null, $status = null, $dateFrom = null, $dateTo = null) {
+        // [ĐÃ SỬA]: JOIN Customers để lấy thông tin mới nhất
         $sql = "SELECT b.*, t.name as tour_name, t.code as tour_code, t.min_deposit,
                        c.full_name as customer_name, c.phone as customer_phone, c.id_card as customer_id_card
                 FROM bookings b 
@@ -31,24 +32,37 @@ class Booking {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // 2. [FIX] Tạo mới (ĐÃ THÊM TẤT CẢ CÁC CỘT MỚI VÀO SQL INSERT)
+    // 2. [FIX CHÍNH] Tạo mới (ĐÃ THÊM LẠI CÁC TRƯỜNG SNAPSHOT KHÁCH HÀNG VÀO SQL INSERT)
     public function create($data) {
         try {
             $booking_code = "BK-" . time();
             $query = "INSERT INTO bookings 
-                     (booking_code, tour_id, customer_id, transport_supplier_id, hotel_supplier_id, pickup_location, 
+                     (booking_code, tour_id, customer_id, customer_name, customer_phone, customer_id_card, customer_email, 
+                      transport_supplier_id, hotel_supplier_id, pickup_location, flight_number, room_details, 
                       travel_date, return_date, adults, children, total_price, note) 
                      VALUES 
-                     (:code, :tid, :cid, :trans, :hotel, :pickup, :start, :end, :adults, :child, :total, :note)";
+                     (:code, :tid, :cid, :name, :phone, :card, :email, 
+                      :trans, :hotel, :pickup, :flight, :room, :start, :end, :adults, :child, :total, :note)";
             
             $stmt = $this->conn->prepare($query);
             $stmt->execute([
                 ':code'   => $booking_code,
                 ':tid'    => $data['tour_id'],
                 ':cid'    => $data['customer_id'],
+                
+                // Snapshot Data (Rất quan trọng cho trang chi tiết)
+                ':name'   => $data['customer_name'],
+                ':phone'  => $data['customer_phone'],
+                ':card'   => $data['customer_id_card'],
+                ':email'  => $data['customer_email'],
+                
+                // Vận hành
                 ':trans'  => $data['transport_id'],
                 ':hotel'  => $data['hotel_id'],
                 ':pickup' => $data['pickup_location'],
+                ':flight' => $data['flight_number'],
+                ':room'   => $data['room_details'],
+                
                 ':start'  => $data['travel_date'],
                 ':end'    => $data['return_date'],
                 ':adults' => $data['adults'],
@@ -64,11 +78,12 @@ class Booking {
         }
     }
 
-    // 3. [FIX] Cập nhật (ĐÃ THÊM TẤT CẢ CÁC CỘT MỚI VÀO SQL UPDATE)
+    // 3. [FIX CHÍNH] Cập nhật
     public function update($id, $data) {
         try {
             $query = "UPDATE bookings SET 
-                      tour_id=:tid, customer_id=:cid, transport_supplier_id=:trans, hotel_supplier_id=:hotel, pickup_location=:pickup, 
+                      tour_id=:tid, customer_id=:cid, customer_name=:name, customer_phone=:phone, customer_id_card=:card, customer_email=:email,
+                      transport_supplier_id=:trans, hotel_supplier_id=:hotel, pickup_location=:pickup, flight_number=:flight, room_details=:room,
                       travel_date=:start, return_date=:end, adults=:adults, children=:child, total_price=:total, note=:note 
                       WHERE id=:id";
             
@@ -76,9 +91,17 @@ class Booking {
             $stmt->execute([
                 ':tid'=>$data['tour_id'], 
                 ':cid'=>$data['customer_id'], 
+                ':name'=>$data['customer_name'],
+                ':phone'=>$data['customer_phone'],
+                ':card'=>$data['customer_id_card'],
+                ':email'=>$data['customer_email'],
+                
                 ':trans'=>$data['transport_id'], 
                 ':hotel'=>$data['hotel_id'], 
                 ':pickup'=>$data['pickup_location'], 
+                ':flight'=>$data['flight_number'],
+                ':room'=>$data['room_details'],
+
                 ':start'=>$data['travel_date'], 
                 ':end'=>$data['return_date'], 
                 ':adults'=>$data['adults'], 

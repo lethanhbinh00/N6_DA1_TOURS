@@ -22,7 +22,7 @@
                 <div class="card-body p-4">
                     <form action="index.php?action=booking-store" method="POST">
                         
-                        <h5 class="text-success border-bottom pb-2 mb-3 fw-bold"><i class="fas fa-suitcase me-2"></i>1. Thông tin Tour & Số lượng</h5>
+                        <h5 class="text-success border-bottom pb-2 mb-3 fw-bold"><i class="fas fa-suitcase me-2"></i>1. Thông tin Tour & Ngày đi</h5>
                         <div class="row g-3 mb-4">
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">Chọn Tour <span class="text-danger">*</span></label>
@@ -74,16 +74,22 @@
                                 <small class="text-muted fst-italic ps-1">Hệ thống sẽ tự điền thông tin bên dưới sau khi bạn chọn.</small>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-3">
                                 <label class="form-label fw-bold small">Họ tên</label>
                                 <input type="text" name="customer_name" id="customer_name" class="form-control bg-white" readonly required>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-3">
                                 <label class="form-label fw-bold small">Số điện thoại</label>
                                 <input type="text" name="customer_phone" id="customer_phone" class="form-control bg-white" readonly required>
                             </div>
-                            <input type="hidden" name="customer_id_card" id="customer_id_card">
-                            <input type="hidden" name="customer_email" id="customer_email">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold small">CCCD/CMND</label>
+                                <input type="text" name="customer_id_card" id="customer_id_card" class="form-control bg-white" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold small">Email</label>
+                                <input type="text" name="customer_email" id="customer_email" class="form-control bg-white" readonly>
+                            </div>
                         </div>
                         
                         <h5 class="text-success border-bottom pb-2 mb-3 fw-bold">3. Dịch vụ chính & Điểm đón</h5>
@@ -116,7 +122,7 @@
                         <div class="row g-3 mb-4 bg-light p-3 rounded mx-0">
                             <div class="col-md-3">
                                 <label class="form-label fw-bold">Người lớn</label>
-                                <input type="number" id="adults" name="adults" class="form-control" value="" min="1" placeholder="0" required autocomplete="off" onchange="calcTotal()">
+                                <input type="number" id="adults" name="adults" class="form-control" value="" min="1" placeholder="1" required autocomplete="off" onchange="calcTotal()">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label fw-bold">Trẻ em</label>
@@ -136,7 +142,7 @@
 
                         <div class="text-end">
                             <a href="index.php?action=booking-list" class="btn btn-secondary me-2">Hủy bỏ</a>
-                            <button type="submit" class="btn btn-success px-4 fw-bold">
+                            <button type="submit" class="btn btn-success px-4 fw-bold shadow-sm">
                                 <i class="fas fa-paper-plane me-2"></i> Xác nhận Đặt Tour
                             </button>
                         </div>
@@ -149,8 +155,35 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+    // [HÀM ĐỒNG BỘ DATA]
+    function syncCustomerSnapshot() {
+        // Lấy option đang được chọn
+        const selectedOption = $('#customer_select').find(':selected');
+        
+        // Kiểm tra nếu không có lựa chọn nào hoặc lựa chọn là placeholder thì xóa sạch
+        if (selectedOption.val() === "" || selectedOption.length === 0) {
+            $('#customer_name').val('');
+            $('#customer_phone').val('');
+            $('#customer_email').val('');
+            $('#customer_id_card').val('');
+            return;
+        }
+
+        // Lấy data attributes bằng .data() (phương pháp chuẩn)
+        const name = selectedOption.data('fullname') || '';
+        const phone = selectedOption.data('phone') || '';
+        const email = selectedOption.data('email') || '';
+        const card = selectedOption.data('card') || '';
+
+        // Điền vào các ô read-only
+        $('#customer_name').val(name);
+        $('#customer_phone').val(phone);
+        $('#customer_email').val(email);
+        $('#customer_id_card').val(card);
+    }
+    
     $(document).ready(function() {
-        // [ULTIMATE FIX]: Ép giá trị rỗng sau khi trình duyệt load
+        // [FIX BROWSER CACHE/DEFAULT 1]: Ép giá trị rỗng
         setTimeout(function() {
             $('#adults').val(''); 
         }, 10);
@@ -160,37 +193,28 @@
             placeholder: "-- Tìm kiếm Khách hàng --",
             allowClear: true,
             width: '100%'
+        }).on('select2:select', function (e) {
+            // Chạy hàm sync khi chọn
+            syncCustomerSnapshot();
+        }).on('select2:clear', function (e) {
+            // Chạy hàm sync khi xóa
+            syncCustomerSnapshot(); 
         });
+
         $('#tour_select').select2({
             placeholder: "-- Tìm kiếm Tour --",
             allowClear: true,
             width: '100%'
-        });
-        $('.select2-basic').select2({ width: '100%' });
-
-        // Sự kiện khi chọn khách hàng -> Điền thông tin vào input ẩn
-        $('#customer_select').on('select2:select', function (e) {
-            var option = e.params.data.element;
-            
-            $('#customer_name').val($(option).data('fullname'));
-            $('#customer_phone').val($(option).data('phone'));
-            $('#customer_email').val($(option).data('email'));
-            $('#customer_id_card').val($(option).data('card'));
-        });
-
-        // Sự kiện khi xóa chọn khách
-        $('#customer_select').on('select2:clear', function (e) {
-            $('#customer_name').val('');
-            $('#customer_phone').val('');
-            $('#customer_email').val('');
-            $('#customer_id_card').val('');
-        });
-
-        // Sự kiện chọn Tour -> Tính giá
-        $('#tour_select').on('select2:select', function (e) {
+        }).on('select2:select', function (e) {
             var option = $(this).find(':selected')[0];
             updatePriceFromOption(option);
         });
+
+        $('.select2-basic').select2({ width: '100%' });
+        
+        // Chạy lần đầu để điền dữ liệu nếu có giá trị mặc định được chọn bởi PHP
+        // Phải chạy sau khi Select2 đã khởi tạo
+        syncCustomerSnapshot();
     });
 
     // --- CÁC HÀM TÍNH TIỀN ---
@@ -209,7 +233,6 @@
     }
 
     function calcTotal() {
-        // Lấy giá trị sau khi đã xóa cache
         const adults = parseInt(document.getElementById('adults').value) || 0;
         const children = parseInt(document.getElementById('children').value) || 0;
         const total = (adults * priceAdult) + (children * priceChild);
