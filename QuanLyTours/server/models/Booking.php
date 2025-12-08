@@ -8,9 +8,8 @@ class Booking {
 
     // 1. Lấy danh sách (Có bộ lọc)
     public function getAll($keyword = null, $status = null, $dateFrom = null, $dateTo = null) {
-        // [ĐÃ SỬA]: JOIN Customers để lấy thông tin mới nhất
-        $sql = "SELECT b.*, t.name as tour_name, t.code as tour_code, t.min_deposit,
-                       c.full_name as customer_name, c.phone as customer_phone, c.id_card as customer_id_card
+        // [ĐÃ SỬA] Chọn t.min_deposit (Đảm bảo đã chạy SQL BƯỚC 1)
+        $sql = "SELECT b.*, t.name as tour_name, t.code as tour_code, t.min_deposit 
                 FROM bookings b 
                 LEFT JOIN tours t ON b.tour_id = t.id 
                 LEFT JOIN customers c ON b.customer_id = c.id
@@ -32,10 +31,11 @@ class Booking {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // 2. [FIX] Tạo mới (ĐÃ THÊM TẤT CẢ CÁC CỘT MỚI VÀO SQL INSERT)
+    // 2. Tạo mới
     public function create($data) {
         try {
             $booking_code = "BK-" . time();
+            // [CẬP NHẬT] Đã thêm các cột supplier_id và pickup_location
             $query = "INSERT INTO bookings 
                      (booking_code, tour_id, customer_id, transport_supplier_id, hotel_supplier_id, pickup_location, 
                       travel_date, return_date, adults, children, total_price, note) 
@@ -59,15 +59,13 @@ class Booking {
             ]);
             
             return $this->conn->lastInsertId(); 
-
-        } catch (Exception $e) {
-            return "Error: " . $e->getMessage();
-        }
+        } catch (Exception $e) { return "Error: " . $e->getMessage(); }
     }
 
-    // 3. [FIX] Cập nhật (ĐÃ THÊM TẤT CẢ CÁC CỘT MỚI VÀO SQL UPDATE)
+    // 3. Cập nhật
     public function update($id, $data) {
         try {
+            // [CẬP NHẬT] Đã thêm các cột supplier_id và pickup_location
             $query = "UPDATE bookings SET 
                       tour_id=:tid, customer_id=:cid, transport_supplier_id=:trans, hotel_supplier_id=:hotel, pickup_location=:pickup, 
                       travel_date=:start, return_date=:end, adults=:adults, children=:child, total_price=:total, note=:note 
@@ -75,31 +73,23 @@ class Booking {
             
             $stmt = $this->conn->prepare($query);
             $stmt->execute([
-                ':tid'=>$data['tour_id'], 
-                ':cid'=>$data['customer_id'], 
-                ':trans'=>$data['transport_id'], 
-                ':hotel'=>$data['hotel_id'], 
-                ':pickup'=>$data['pickup_location'], 
-                ':start'=>$data['travel_date'], 
-                ':end'=>$data['return_date'], 
-                ':adults'=>$data['adults'], 
-                ':child'=>$data['children'], 
-                ':total'=>$data['total_price'], 
-                ':note'=>$data['note'], 
-                ':id'=>$id
+                ':tid'=>$data['tour_id'], ':cid'=>$data['customer_id'], ':trans'=>$data['transport_id'], 
+                ':hotel'=>$data['hotel_id'], ':pickup'=>$data['pickup_location'], ':start'=>$data['travel_date'], 
+                ':end'=>$data['return_date'], ':adults'=>$data['adults'], ':child'=>$data['children'], 
+                ':total'=>$data['total_price'], ':note'=>$data['note'], ':id'=>$id
             ]);
             return "success";
         } catch (Exception $e) { return $e->getMessage(); }
     }
 
-    // 4. [FIX] Lấy 1 Booking (Đã loại bỏ các cột cũ và dùng JOIN)
+    // 4. Lấy 1 Booking
     public function getById($id) {
         $stmt = $this->conn->prepare("SELECT * FROM bookings WHERE id = :id");
         $stmt->execute([':id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // --- CÁC HÀM KHÁC GIỮ NGUYÊN ---
+    // --- CÁC HÀM KHÁC GIỮ NGUYÊN (Logic Status, Deposit, Payment) ---
     public function updateStatus($id, $status) {
         $stmt = $this->conn->prepare("UPDATE bookings SET status = :status WHERE id = :id");
         return $stmt->execute([':status' => $status, ':id' => $id]);
