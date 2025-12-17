@@ -2,7 +2,8 @@
 /**
  * YÊU CẦU: Controller phải truyền đủ các biến sau:
  * $booking, $tour, $paxList, $services, $suppliers, $users
- */
+ */// operations.php
+$isLocked = !empty($booking['guide_id']); // Nếu đã có guide_id thì coi như đã xác nhận và khóa
 ?>
 
 <style>
@@ -87,22 +88,27 @@
     <div class="row g-4">
         <div class="col-lg-7">
             <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center py-2">
-                    <span><i class="fas fa-users me-2"></i>Danh sách Khách đoàn & Điểm danh</span>
-                    <div class="btn-group">
-                        <button class="btn btn-sm btn-light fw-bold text-primary" data-bs-toggle="modal" data-bs-target="#addPaxModal">
-                            <i class="fas fa-plus-circle"></i> Thêm khách
-                        </button>
-                        <button class="btn btn-sm btn-success fw-bold" data-bs-toggle="modal" data-bs-target="#importPaxModal">
-                            <i class="fas fa-file-excel"></i> Import
-                        </button>
-                        <a href="index.php?action=booking-pax-delete-all&booking_id=<?= $booking['id'] ?>" 
-                           class="btn btn-danger btn-sm fw-bold" 
-                           onclick="return confirm('Bạn có chắc chắn muốn xóa TOÀN BỘ danh sách khách không? Thao tác này không thể hoàn tác!')">
-                           <i class="fas fa-trash-alt"></i> Xóa tất cả
-                        </a>
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-users me-2"></i>Danh sách Khách đoàn & Điểm danh</span>
+                        
+                        <div class="action-buttons">
+                            <?php if (!$isLocked): ?>
+                                <button class="btn btn-light btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addPaxModal">
+                                    <i class="fas fa-plus-circle me-1"></i>Thêm khách
+                                </button>
+                                <button class="btn btn-success btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#importPaxModal">
+                                    <i class="fas fa-file-import me-1"></i>Import
+                                </button>
+                                <button class="btn btn-danger btn-sm fw-bold" onclick="confirmDeleteAll()">
+                                    <i class="fas fa-trash-alt me-1"></i>Xóa tất cả
+                                </button>
+                            <?php else: ?>
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-lock me-1"></i>Danh sách đã chốt
+                                </span>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                </div>
                 <div class="card-body p-0">
                     <table class="table table-hover pax-table mb-0">
                         <thead class="bg-light">
