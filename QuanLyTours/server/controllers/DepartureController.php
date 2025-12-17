@@ -1,92 +1,183 @@
 <?php
-require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../models/Departure.php';
 
-class DepartureController {
+class DepartureController
+{
+    private $model;
 
-    public function index() {
+    public function __construct()
+    {
+        // Ensure we pass a PDO connection into the model (Database class used elsewhere)
+        require_once __DIR__ . '/../config/Database.php';
         $database = new Database();
         $db = $database->getConnection();
-        $model = new Departure($db);
-        $departures = $model->getAll();
-        $tours = $model->getTours();
-
-        require_once __DIR__ . '/../../views/departures/index.php';
+        $this->model = new Departure($db);
     }
 
-    public function create() {
-        $database = new Database();
-        $db = $database->getConnection();
-        $model = new Departure($db);
-        $tours = $model->getTours();
-
-        require_once __DIR__ . '/../../views/departures/create.php';
+    /* ========= LIST ========= */
+    public function index()
+    {
+        $keyword = $_GET['keyword'] ?? '';
+        $status = $_GET['status'] ?? '';
+        $departures = $this->model->getAllFiltered($keyword, $status);
+        include __DIR__ . '/../../views/departures/index.php';
     }
 
-    public function store() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $tour_id = $_POST['tour_id'] ?? null;
-            $start_date = $_POST['start_date'] ?? null;
-            $seats = $_POST['seats'] ?? 0;
+    /* ========= CREATE PAGE ========= */
+    public function create()
+    {
+        $tours = $this->model->getTours();
+        $guides = $this->model->getGuides();
+        include __DIR__ . '/../../views/departures/create.php';
+    }
 
-            if (empty($tour_id) || empty($start_date)) {
-                echo "<script>alert('Vui lòng chọn tour và ngày khởi hành!'); window.history.back();</script>";
-                return;
+    /* ========= STORE ========= */
+    public function store()
+    {
+        $this->model->create($_POST);
+        $_SESSION['success'] = "Thêm lịch khởi hành thành công";
+        header("Location: index.php?action=departure-list");
+        exit;
+    }
+
+    /* ========= EDIT PAGE ========= */
+    public function edit()
+    {
+        $id = $_GET['id'];
+        $departure = $this->model->find($id);
+        $tours     = $this->model->getTours();
+        $guides    = $this->model->getGuides();
+
+        include __DIR__ . '/../../views/departures/edit.php';
+    }
+
+    /* ========= DETAIL PAGE (HDV view) ========= */
+    public function detail()
+    {
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            header('Location: index.php?action=departure-list');
+            exit;
+        }
+
+        $departure = $this->model->find($id);
+        if (!$departure) {
+            $_SESSION['error'] = 'Không tìm thấy lịch trình';
+            header('Location: index.php?action=departure-list');
+            exit;
+        }
+
+        $tour = $this->model->getTours(); // lấy danh sách tour để map
+        $itinerary = $this->model->getItinerary($departure['tour_id']);
+        $passengers = $this->model->getPassengers($departure['tour_id'], $departure['start_date']);
+
+        // load saved attendance records and compute a small summary
+        $attendanceRecords = $this->model->getAttendance($id);
+        $present = $late = $absent = 0;
+        foreach ($passengers as $p) {
+            $bid = $p['id'];
+            if (isset($attendanceRecords[$bid])) {
+                $s = $attendanceRecords[$bid]['status'];
+                if ($s == 'present') $present++;
+                elseif ($s == 'late') $late++;
+                else $absent++;
             }
-
-            $database = new Database();
-            $db = $database->getConnection();
-            $model = new Departure($db);
-            $data = [
-                'tour_id' => $tour_id,
-                'start_date' => $start_date,
-                'seats' => $seats
-            ];
-            $model->create($data);
-            header("Location: index.php?action=departure-list&msg=created");
         }
+        $totalPassengers = count($passengers);
+        $attendanceSummary = [
+            'total' => $totalPassengers,
+            'present' => $present,
+            'late' => $late,
+            'absent' => $absent,
+            'complete' => ($totalPassengers > 0 && ($present + $late) === $totalPassengers)
+        ];
+
+        include __DIR__ . '/../../views/departures/detail.php';
     }
 
-    public function edit() {
-        $id = $_GET['id'] ?? null;
-        if ($id) {
-            $database = new Database();
-            $db = $database->getConnection();
-            $model = new Departure($db);
-            $departure = $model->find($id);
-            $tours = $model->getTours();
-
-            if (!$departure) { echo "Không tìm thấy khởi hành!"; die(); }
-            require_once __DIR__ . '/../../views/departures/edit.php';
+    /* ========= STORE REPORT/ATTENDANCE ========= */
+    public function storeReport()
+    {
+        $depId = $_POST['departure_id'] ?? null;
+        if (!$depId) {
+            header('Location: index.php?action=departure-list');
+            exit;
         }
+        // Basic server-side validation
+        $departure = $this->model->find($depId);
+        if (!$departure) {
+            $_SESSION['error'] = 'Lịch khởi hành không tồn tại';
+            header('Location: index.php?action=departure-list');
+            exit;
+        }
+
+        $content = trim($_POST['content'] ?? '');
+        if (strlen($content) == 0) {
+            $_SESSION['error'] = 'Vui lòng nhập nội dung báo cáo.';
+            header('Location: index.php?action=departure-detail&id=' . $depId);
+            exit;
+        }
+
+        // validate attendance structure if provided
+        $attendance = $_POST['attendance'] ?? [];
+        $validStatuses = ['present', 'late', 'absent'];
+        if (!is_array($attendance)) {
+            $_SESSION['error'] = 'Dữ liệu điểm danh không hợp lệ.';
+            header('Location: index.php?action=departure-detail&id=' . $depId);
+            exit;
+        }
+
+        foreach ($attendance as $booking_id => $row) {
+            if (!ctype_digit((string)$booking_id)) {
+                $_SESSION['error'] = 'ID khách không hợp lệ trong điểm danh.';
+                header('Location: index.php?action=departure-detail&id=' . $depId);
+                exit;
+            }
+            $status = $row['status'] ?? '';
+            if (!in_array($status, $validStatuses, true)) {
+                $_SESSION['error'] = 'Trạng thái điểm danh không hợp lệ.';
+                header('Location: index.php?action=departure-detail&id=' . $depId);
+                exit;
+            }
+        }
+
+        // All validations passed — proceed to save
+        $reportSaved = $this->model->saveReport($_POST);
+        $attendanceSaved = true;
+        if (!empty($attendance)) {
+            $attendanceSaved = $this->model->saveAttendance($depId, $attendance);
+        }
+
+        if ($reportSaved && $attendanceSaved) {
+            $_SESSION['success'] = 'Báo cáo và điểm danh đã được lưu';
+        } else {
+            $err = $this->model->getLastError();
+            if (!empty($err)) {
+                $_SESSION['error'] = 'Lưu thất bại: ' . $err;
+            } else {
+                $_SESSION['error'] = 'Lưu thất bại';
+            }
+        }
+
+        header('Location: index.php?action=departure-detail&id=' . $depId);
+        exit;
     }
 
-    public function update() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = $_POST['id'] ?? null;
-            $tour_id = $_POST['tour_id'] ?? null;
-            $start_date = $_POST['start_date'] ?? null;
-            $seats = $_POST['seats'] ?? 0;
-
-            if (!$id) { echo "ID missing"; return; }
-
-            $database = new Database();
-            $db = $database->getConnection();
-            $model = new Departure($db);
-            $data = ['id' => $id, 'tour_id' => $tour_id, 'start_date' => $start_date, 'seats' => $seats];
-            $model->updateDeparture($data);
-            header("Location: index.php?action=departure-list&msg=updated");
-        }
+    /* ========= UPDATE ========= */
+    public function update()
+    {
+        $this->model->update($_POST);
+        $_SESSION['success'] = "Cập nhật lịch khởi hành thành công";
+        header("Location: index.php?action=departure-list");
+        exit;
     }
 
-    public function delete() {
-        $id = $_GET['id'] ?? null;
-        if ($id) {
-            $database = new Database();
-            $db = $database->getConnection();
-            $model = new Departure($db);
-            $model->deleteDeparture($id);
-            header("Location: index.php?action=departure-list&msg=deleted");
-        }
+    /* ========= DELETE ========= */
+    public function delete()
+    {
+        $this->model->delete($_GET['id']);
+        $_SESSION['success'] = "Đã xóa lịch khởi hành";
+        header("Location: index.php?action=departure-list");
+        exit;
     }
 }

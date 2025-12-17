@@ -4,96 +4,150 @@ class CarBooking
 {
     private $conn;
 
-    public function __construct($db)
+    public function __construct($db = null)
     {
-        $this->conn = $db;
-    }
-
-    public function getAll()
-    {
-        try {
-            $sql = "SELECT cb.*, s.name AS service_name
-                    FROM car_bookings cb
-                    LEFT JOIN services s ON cb.service_id = s.id
-                    ORDER BY cb.date DESC";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            // Table `services` (or `car_bookings`) might be missing — return empty dataset to avoid fatal error
-            return [];
+        if ($db instanceof PDO) {
+            $this->conn = $db;
+        } else {
+            global $conn;
+            $this->conn = $conn;
         }
     }
 
+    /* =======================
+       LẤY DANH SÁCH + SEARCH
+    ======================= */
+    public function getAll($keyword = '')
+    {
+        $sql = "SELECT cb.*, 
+               s.name AS service_name,
+               s.price AS service_price,
+               (cb.quantity * s.price) AS total_price
+        FROM car_bookings cb
+        LEFT JOIN services s ON cb.service_id = s.id
+        WHERE 1";
+
+
+        $params = [];
+
+        if ($keyword != '') {
+            $sql .= " AND (cb.customer_name LIKE ? OR cb.phone LIKE ?)";
+            $params[] = "%$keyword%";
+            $params[] = "%$keyword%";
+        }
+
+        $sql .= " ORDER BY cb.date DESC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /* =======================
+       DỊCH VỤ XE
+    ======================= */
     public function getServices()
     {
-        try {
-            $sql = "SELECT id, name, price FROM services ORDER BY name ASC";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            return [];
-        }
+        // Bảng tên trong DB là `services` (theo SQL dump), không phải `car_services`.
+        $stmt = $this->conn->prepare(
+            "SELECT id, name, price FROM services ORDER BY name"
+        );
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /* =======================
+       THÊM BOOKING
+    ======================= */
     public function create($data)
     {
-        try {
-            $sql = "INSERT INTO car_bookings (service_id, customer_name, phone, date, quantity, note)
-                    VALUES (:service_id, :customer_name, :phone, :date, :quantity, :note)";
-            $stmt = $this->conn->prepare($sql);
-            return $stmt->execute([
-                'service_id' => $data['service_id'],
-                'customer_name' => $data['customer_name'],
-                'phone' => $data['phone'],
-                'date' => $data['date'],
-                'quantity' => $data['quantity'],
-                'note' => $data['note'] ?? ''
-            ]);
-        } catch (PDOException $e) {
-            return $e->getMessage();
+        if ($this->isDuplicate($data['service_id'], $data['date'])) {
+            return "Dịch vụ đã được đặt vào ngày này!";
         }
+
+        $stmt = $this->conn->prepare(
+            "INSERT INTO car_bookings
+             (service_id, customer_name, phone, date, quantity, note)
+             VALUES (?, ?, ?, ?, ?, ?)"
+        );
+
+        return $stmt->execute([
+            $data['service_id'],
+            $data['customer_name'],
+            $data['phone'],
+            $data['date'],
+            $data['quantity'],
+            $data['note'] ?? ''
+        ]);
     }
 
+    /* =======================
+       KIỂM TRA TRÙNG
+    ======================= */
+    private function isDuplicate($service_id, $date)
+    {
+        $stmt = $this->conn->prepare(
+            "SELECT COUNT(*) FROM car_bookings 
+             WHERE service_id = ? AND date = ?"
+        );
+        $stmt->execute([$service_id, $date]);
+        return $stmt->fetchColumn() > 0;
+    }
+
+    /* =======================
+       FIND
+    ======================= */
     public function find($id)
     {
-        $sql = "SELECT * FROM car_bookings WHERE id = :id";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute(['id' => $id]);
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM car_bookings WHERE id = ?"
+        );
+        $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function updateBooking($data)
+    /* =======================
+       UPDATE
+    ======================= */
+    public function update($data)
     {
-        try {
-            $sql = "UPDATE car_bookings
-                    SET service_id = :service_id,
-                        customer_name = :customer_name,
-                        phone = :phone,
-                        date = :date,
-                        quantity = :quantity,
-                        note = :note
-                    WHERE id = :id";
-            $stmt = $this->conn->prepare($sql);
-            return $stmt->execute([
-                'service_id' => $data['service_id'],
-                'customer_name' => $data['customer_name'],
-                'phone' => $data['phone'],
-                'date' => $data['date'],
-                'quantity' => $data['quantity'],
-                'note' => $data['note'] ?? '',
-                'id' => $data['id']
-            ]);
-        } catch (PDOException $e) {
-            return $e->getMessage();
-        }
+        $stmt = $this->conn->prepare(
+            "UPDATE car_bookings SET
+             service_id=?, customer_name=?, phone=?, date=?, quantity=?, note=?
+             WHERE id=?"
+        );
+
+        return $stmt->execute([
+            $data['service_id'],
+            $data['customer_name'],
+            $data['phone'],
+            $data['date'],
+            $data['quantity'],
+            $data['note'] ?? '',
+            $data['id']
+        ]);
     }
 
+    // Backwards-compatible wrapper used by controller
+    public function updateBooking($data)
+    {
+        return $this->update($data);
+    }
+
+    /* =======================
+       DELETE
+    ======================= */
+    public function delete($id)
+    {
+        $stmt = $this->conn->prepare(
+            "DELETE FROM car_bookings WHERE id=?"
+        );
+        return $stmt->execute([$id]);
+    }
+
+    // Backwards-compatible wrapper used by controller
     public function deleteBooking($id)
     {
-        $sql = "DELETE FROM car_bookings WHERE id = :id";
-        $stmt = $this->conn->prepare($sql);
-        return $stmt->execute(['id' => $id]);
+        return $this->delete($id);
     }
 }

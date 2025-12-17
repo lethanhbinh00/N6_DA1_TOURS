@@ -3,70 +3,288 @@
 class Departure
 {
     private $conn;
-    protected $table = "tour_departures";
+    private $lastError = null;
 
-    public function __construct($db)
+    public function __construct()
     {
-        $this->conn = $db;
+        global $conn;
+        $this->conn = $conn;
     }
 
     public function getAll()
     {
-        $sql = "SELECT d.*, t.name AS tour_name
-                FROM tour_departures d
-                JOIN tours t ON d.tour_id = t.id
-                ORDER BY d.start_date ASC";
+        // Deprecated: use getAll with filters. Keep compatibility.
+        return $this->getAllFiltered('', '');
+    }
+
+    // New: fetch departures with optional keyword and status filters
+    public function getAllFiltered($keyword = '', $status = '')
+    {
+        // Detect whether `guide_id` column exists to avoid SQL errors when migration not applied
+        $hasGuideCol = false;
+        try {
+            $stmtCheck = $this->conn->prepare("SHOW COLUMNS FROM `departures` LIKE 'guide_id'");
+            $stmtCheck->execute();
+            $hasGuideCol = ($stmtCheck->fetch() !== false);
+        } catch (Exception $e) {
+            $hasGuideCol = false;
+        }
+
+        if ($hasGuideCol) {
+            $sql = "SELECT d.*, t.name AS tour_name, g.full_name AS guide_name
+                    FROM departures d
+                    JOIN tours t ON d.tour_id = t.id
+                    LEFT JOIN guides g ON d.guide_id = g.id
+                    WHERE 1";
+        } else {
+            $sql = "SELECT d.*, t.name AS tour_name, NULL AS guide_name
+                    FROM departures d
+                    JOIN tours t ON d.tour_id = t.id
+                    WHERE 1";
+        }
+
+        $params = [];
+
+        if ($keyword !== '') {
+            if ($hasGuideCol) {
+                $sql .= " AND (t.name LIKE ? OR g.full_name LIKE ?)";
+                $params[] = "%$keyword%";
+                $params[] = "%$keyword%";
+            } else {
+                $sql .= " AND (t.name LIKE ?)";
+                $params[] = "%$keyword%";
+            }
+        }
+
+        // status mapping based on start_date relative to today
+        if ($status !== '') {
+            $today = date('Y-m-d');
+            if ($status == 'upcoming') {
+                $sql .= " AND d.start_date > ?";
+                $params[] = $today;
+            } elseif ($status == 'running') {
+                $sql .= " AND d.start_date = ?";
+                $params[] = $today;
+            } elseif ($status == 'completed') {
+                $sql .= " AND d.start_date < ?";
+                $params[] = $today;
+            }
+        }
+
+        $sql .= " ORDER BY d.start_date DESC";
+
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getTours()
     {
-        $sql = "SELECT id, name FROM tours ORDER BY name ASC";
-        $stmt = $this->conn->prepare($sql);
+        $stmt = $this->conn->prepare(
+            "SELECT id, name FROM tours"
+        );
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function find($id)
+    public function getGuides()
     {
-        $sql = "SELECT * FROM tour_departures WHERE id = :id";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute(['id' => $id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt = $this->conn->prepare("SELECT id, full_name FROM guides ORDER BY full_name");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function create($data)
     {
-        $sql = "INSERT INTO tour_departures (tour_id, start_date, seats)
-                VALUES (:tour_id, :start_date, :seats)";
-        $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([
-            'tour_id' => $data['tour_id'],
-            'start_date' => $data['start_date'],
-            'seats' => $data['seats']
-        ]);
+        // check if guide_id column exists
+        $hasGuideCol = false;
+        try {
+            $stmtCheck = $this->conn->prepare("SHOW COLUMNS FROM `departures` LIKE 'guide_id'");
+            $stmtCheck->execute();
+            $hasGuideCol = ($stmtCheck->fetch() !== false);
+        } catch (Exception $e) {
+            $hasGuideCol = false;
+        }
+
+        if ($hasGuideCol) {
+            $stmt = $this->conn->prepare(
+                "INSERT INTO departures (tour_id, start_date, seats, guide_id, note)
+                 VALUES (?, ?, ?, ?, ?)"
+            );
+            return $stmt->execute([
+                $data['tour_id'],
+                $data['start_date'],
+                $data['seats'],
+                $data['guide_id'] ?? null,
+                $data['note'] ?? null
+            ]);
+        } else {
+            $stmt = $this->conn->prepare(
+                "INSERT INTO departures (tour_id, start_date, seats)
+                 VALUES (?, ?, ?)"
+            );
+            return $stmt->execute([
+                $data['tour_id'],
+                $data['start_date'],
+                $data['seats']
+            ]);
+        }
     }
 
-    public function updateDeparture($data)
+    public function find($id)
     {
-        $sql = "UPDATE tour_departures
-                SET tour_id = :tour_id, start_date = :start_date, seats = :seats
-                WHERE id = :id";
-        $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([
-            'tour_id' => $data['tour_id'],
-            'start_date' => $data['start_date'],
-            'seats' => $data['seats'],
-            'id' => $data['id']
-        ]);
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM departures WHERE id=?"
+        );
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function deleteDeparture($id)
+    // Lấy lịch trình chi tiết: itinerary của tour
+    public function getItinerary($tour_id)
     {
-        $sql = "DELETE FROM tour_departures WHERE id = :id";
-        $stmt = $this->conn->prepare($sql);
-        return $stmt->execute(['id' => $id]);
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM tour_itineraries WHERE tour_id = ? ORDER BY day_number"
+        );
+        $stmt->execute([$tour_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Lấy danh sách khách (bookings) theo tour và ngày khởi hành
+    public function getPassengers($tour_id, $date)
+    {
+        $stmt = $this->conn->prepare(
+            "SELECT b.id, b.customer_name, b.customer_phone, b.customer_email, b.adults, b.children, b.note
+             FROM bookings b
+             WHERE b.tour_id = ? AND b.travel_date = ?"
+        );
+        $stmt->execute([$tour_id, $date]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Lấy bản ghi điểm danh cho một departure (booking_id => [status,note])
+    public function getAttendance($departure_id)
+    {
+        try {
+            $stmt = $this->conn->prepare(
+                "SELECT booking_id, status, note FROM departure_attendance WHERE departure_id = ?"
+            );
+            $stmt->execute([$departure_id]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $out = [];
+            foreach ($rows as $r) {
+                $out[$r['booking_id']] = $r;
+            }
+            return $out;
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    // Lưu báo cáo HDV/diễn biến tour
+    public function saveReport($data)
+    {
+        try {
+            $stmt = $this->conn->prepare(
+                "INSERT INTO guide_reports (departure_id, guide_id, report_date, content, photos)
+                 VALUES (?, ?, ?, ?, ?)"
+            );
+            $res = $stmt->execute([
+                $data['departure_id'],
+                $data['guide_id'] ?? null,
+                $data['report_date'] ?? date('Y-m-d'),
+                $data['content'] ?? '',
+                $data['photos'] ?? ''
+            ]);
+            if (!$res) {
+                $err = $stmt->errorInfo();
+                $this->lastError = implode(' | ', $err);
+            }
+            return $res;
+        } catch (Exception $e) {
+            $this->lastError = $e->getMessage();
+            return false;
+        }
+    }
+
+    // Lưu điểm danh/attendance (mảng passenger_id => status)
+    public function saveAttendance($departure_id, $attendance)
+    {
+        $this->conn->beginTransaction();
+        try {
+            $stmtDel = $this->conn->prepare("DELETE FROM departure_attendance WHERE departure_id = ?");
+            $stmtDel->execute([$departure_id]);
+
+            $stmt = $this->conn->prepare(
+                "INSERT INTO departure_attendance (departure_id, booking_id, status, note) VALUES (?, ?, ?, ?)"
+            );
+            foreach ($attendance as $booking_id => $item) {
+                $status = $item['status'] ?? 'absent';
+                $note = $item['note'] ?? '';
+                $res = $stmt->execute([$departure_id, $booking_id, $status, $note]);
+                if (!$res) {
+                    $err = $stmt->errorInfo();
+                    $this->lastError = implode(' | ', $err);
+                    throw new Exception('Insert attendance failed');
+                }
+            }
+
+            $this->conn->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            if (empty($this->lastError)) $this->lastError = $e->getMessage();
+            return false;
+        }
+    }
+
+    public function getLastError()
+    {
+        return $this->lastError;
+    }
+
+    public function update($data)
+    {
+        // check if guide_id column exists
+        $hasGuideCol = false;
+        try {
+            $stmtCheck = $this->conn->prepare("SHOW COLUMNS FROM `departures` LIKE 'guide_id'");
+            $stmtCheck->execute();
+            $hasGuideCol = ($stmtCheck->fetch() !== false);
+        } catch (Exception $e) {
+            $hasGuideCol = false;
+        }
+
+        if ($hasGuideCol) {
+            $stmt = $this->conn->prepare(
+                "UPDATE departures SET tour_id=?, start_date=?, seats=?, guide_id=?, note=? WHERE id=?"
+            );
+            return $stmt->execute([
+                $data['tour_id'],
+                $data['start_date'],
+                $data['seats'],
+                $data['guide_id'] ?? null,
+                $data['note'] ?? null,
+                $data['id']
+            ]);
+        } else {
+            $stmt = $this->conn->prepare(
+                "UPDATE departures SET tour_id=?, start_date=?, seats=? WHERE id=?"
+            );
+            return $stmt->execute([
+                $data['tour_id'],
+                $data['start_date'],
+                $data['seats'],
+                $data['id']
+            ]);
+        }
+    }
+
+    public function delete($id)
+    {
+        $stmt = $this->conn->prepare(
+            "DELETE FROM departures WHERE id=?"
+        );
+        return $stmt->execute([$id]);
     }
 }

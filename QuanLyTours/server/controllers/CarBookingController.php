@@ -40,7 +40,7 @@ class CarBookingController
         $model = new CarBooking($db);
         $model->create($data);
 
-        header("Location: index.php?action=carbooking-list&msg=created");
+        header("Location: index.php?action=car-booking&msg=created");
     }
 
     public function edit()
@@ -73,7 +73,7 @@ class CarBookingController
         $model = new CarBooking($db);
         $model->updateBooking($data);
 
-        header("Location: index.php?action=carbooking-list&msg=updated");
+        header("Location: index.php?action=car-booking&msg=updated");
     }
 
     public function delete()
@@ -84,6 +84,6 @@ class CarBookingController
         $model = new CarBooking($db);
         $model->deleteBooking($id);
 
-        header("Location: index.php?action=carbooking-list&msg=deleted");
+        header("Location: index.php?action=car-booking&msg=deleted");
     }
 }
