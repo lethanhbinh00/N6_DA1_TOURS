@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,27 +8,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<<<<<<< HEAD
-    
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> 
-    
-    <style>
-        :root { --sidebar-bg: #2c3e50; --sidebar-color: #ecf0f1; --primary-color: #3498db; --active-bg: #34495e; }
-        body { font-family: 'Inter', sans-serif; background-color: #f4f6f9; font-size: 0.9rem; }
-        
-        /* Sidebar Styling */
-        .sidebar { 
-            width: 260px; height: 100vh; position: fixed; top: 0; left: 0;
-            background: var(--sidebar-bg); color: var(--sidebar-color); 
-            overflow-y: auto; z-index: 2000; transition: all 0.3s;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-        }
-        .sidebar-header { 
-            padding: 20px; 
-            border-bottom: 1px solid rgba(255,255,255,0.1); 
-=======
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
@@ -47,7 +27,7 @@
             font-size: 0.9rem;
         }
 
-        /* Sidebar Styling - Z-Index 2000 để nổi lên trên cùng */
+        /* Sidebar Styling */
         .sidebar {
             width: 260px;
             height: 100vh;
@@ -65,18 +45,12 @@
         .sidebar-header {
             padding: 20px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
->>>>>>> origin/main
         }
 
         .brand-text {
             font-size: 1.2rem;
             font-weight: bold;
             display: block;
-        }
-
-        /* Menu Item */
-        .nav-item {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .nav-link {
@@ -87,7 +61,7 @@
             align-items: center;
             text-decoration: none;
             cursor: pointer;
-            width: 100%;
+            transition: 0.2s;
         }
 
         .nav-link:hover,
@@ -96,12 +70,7 @@
             background: var(--active-bg);
         }
 
-        .nav-link i {
-            width: 25px;
-            text-align: center;
-        }
-
-        /* Submenu */
+        /* Submenu Styling */
         .submenu {
             background: #233342;
             display: none;
@@ -116,29 +85,19 @@
             font-size: 0.85rem;
         }
 
-        /* Main Content */
+        /* Main Content Styling */
         .main-content {
             margin-left: 260px;
             padding: 20px;
-            position: relative;
-            z-index: 1;
+            min-height: 100vh;
         }
 
-        /* CSS Fix cho Select2 khớp với Bootstrap */
+        /* Select2 Bootstrap Patch */
         .select2-container .select2-selection--single {
             height: 38px !important;
             border: 1px solid #dee2e6 !important;
             display: flex;
             align-items: center;
-        }
-
-        .select2-container--default .select2-selection--single .select2-selection__arrow {
-            height: 36px !important;
-        }
-
-        .select2-container .select2-selection--single .select2-selection__rendered {
-            padding-left: 12px;
-            color: #212529;
         }
     </style>
 </head>
@@ -147,13 +106,13 @@
 
     <div class="sidebar">
         <div class="sidebar-header">
-            <span class="brand-text"><i class="fas fa-globe-americas me-2"></i>FOURCHICKENS</span>
+            <span class="brand-text text-uppercase"><i class="fas fa-globe-americas me-2"></i>FourChickens</span>
 
             <?php if (isset($_SESSION['user_name'])): ?>
                 <div class="mt-2 pt-2 border-top border-secondary small text-white-50">
                     <div class="d-flex align-items-center justify-content-between">
                         <span><i class="fas fa-user-circle me-1"></i> <?= htmlspecialchars($_SESSION['user_name']) ?></span>
-                        <a href="index.php?action=logout" class="text-danger text-decoration-none fw-bold bg-white px-2 rounded" style="font-size: 10px;">Thoát</a>
+                        <a href="index.php?action=logout" class="btn btn-sm btn-danger py-0 px-2" style="font-size: 10px;">Thoát</a>
                     </div>
                 </div>
             <?php endif; ?>
@@ -164,139 +123,87 @@
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a href="index.php?action=dashboard" class="nav-link <?= ($act == 'dashboard' || $act == '') ? 'active' : '' ?>">
-                    <div class="d-flex align-items-center"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</div>
+                    <div><i class="fas fa-tachometer-alt me-2"></i> Dashboard</div>
                 </a>
             </li>
 
             <li class="nav-item">
-                <a class="nav-link" href="#" onclick="toggleMenu('menu-tour'); return false;">
-                    <div class="d-flex align-items-center"><i class="fas fa-suitcase me-2"></i> Quản lý Tour</div>
+                <a class="nav-link" href="javascript:void(0)" onclick="toggleMenu('menu-tour')">
+                    <div><i class="fas fa-suitcase me-2"></i> Quản lý Tour</div>
                     <i class="fas fa-chevron-down small"></i>
                 </a>
-                <div id="menu-tour" class="submenu <?= (strpos($act, 'tour') !== false || strpos($act, 'index') !== false) ? 'show' : '' ?>">
-                    <a href="index.php?action=index" class="nav-link text-white">Danh sách Tour</a>
+                <div id="menu-tour" class="submenu <?= (strpos($act, 'tour') !== false || $act == 'index') ? 'show' : '' ?>">
+                    <a href="index.php?action=index" class="nav-link <?= ($act == 'index') ? 'active' : '' ?>">Danh sách Tour</a>
+                    <a href="#" class="nav-link">Tour Theo Yêu Cầu</a>
                 </div>
             </li>
 
             <li class="nav-item">
-                <a class="nav-link" href="#" onclick="toggleMenu('menu-booking'); return false;">
-                    <div class="d-flex align-items-center"><i class="fas fa-shopping-cart me-2"></i> Booking & Sales</div>
+                <a class="nav-link" href="javascript:void(0)" onclick="toggleMenu('menu-booking')">
+                    <div><i class="fas fa-shopping-cart me-2"></i> Booking & Sales</div>
                     <i class="fas fa-chevron-down small"></i>
                 </a>
                 <div id="menu-booking" class="submenu <?= (strpos($act, 'booking') !== false || strpos($act, 'customer') !== false) ? 'show' : '' ?>">
-                    <a href="index.php?action=booking-create" class="nav-link">Tạo Booking Mới</a>
-                    <a href="index.php?action=booking-list" class="nav-link">Quản lý Booking</a>
-                    <a href="index.php?action=customer-list" class="nav-link">Quản lý Khách hàng</a>
+                    <a href="index.php?action=booking-create" class="nav-link <?= ($act == 'booking-create') ? 'active' : '' ?>">Tạo Booking Mới</a>
+                    <a href="index.php?action=booking-list" class="nav-link <?= ($act == 'booking-list') ? 'active' : '' ?>">Quản lý Booking</a>
+                    <a href="index.php?action=customer-list" class="nav-link <?= ($act == 'customer-list') ? 'active' : '' ?>">Quản lý Khách hàng</a>
                 </div>
             </li>
 
             <li class="nav-item">
-                <a class="nav-link" href="#" onclick="toggleMenu('menu-ops'); return false;">
-                    <div class="d-flex align-items-center"><i class="fas fa-cogs me-2"></i> Điều hành</div>
+                <a class="nav-link" href="javascript:void(0)" onclick="toggleMenu('menu-ops')">
+                    <div><i class="fas fa-cogs me-2"></i> Điều hành</div>
                     <i class="fas fa-chevron-down small"></i>
                 </a>
-                <div id="menu-ops" class="submenu <?= (strpos($act, 'guide') !== false) ? 'show' : '' ?>">
-                    <a href="index.php?action=guide-list" class="nav-link">Quản lý HDV</a>
-                    <a href="index.php?action=departure-list" class="nav-link">Lịch khởi hành</a>
-                    <a href="index.php?action=car-booking" class="nav-link">Đặt dịch vụ (Xe/KS)</a>
+                <div id="menu-ops" class="submenu <?= (strpos($act, 'guide') !== false || $act == 'departure-list' || $act == 'car-booking') ? 'show' : '' ?>">
+                    <a href="index.php?action=guide-list" class="nav-link <?= ($act == 'guide-list') ? 'active' : '' ?>">Quản lý HDV</a>
+                    <a href="index.php?action=departure-list" class="nav-link <?= ($act == 'departure-list') ? 'active' : '' ?>">Lịch khởi hành</a>
+                    <a href="index.php?action=car-booking" class="nav-link <?= ($act == 'car-booking') ? 'active' : '' ?>">Đặt dịch vụ (Xe/KS)</a>
                 </div>
             </li>
 
             <li class="nav-item">
-                <a class="nav-link" href="#" onclick="toggleMenu('menu-fin'); return false;">
-                    <div class="d-flex align-items-center"><i class="fas fa-file-invoice-dollar me-2"></i> Tài chính & NCC</div>
+                <a class="nav-link" href="javascript:void(0)" onclick="toggleMenu('menu-fin')">
+                    <div><i class="fas fa-file-invoice-dollar me-2"></i> Tài chính & NCC</div>
                     <i class="fas fa-chevron-down small"></i>
                 </a>
-                <div id="menu-fin" class="submenu <?= (strpos($act, 'supplier') !== false) ? 'show' : '' ?>">
-                    <a href="index.php?action=supplier-list" class="nav-link">Nhà cung cấp</a>
-                    <a href="#" class="nav-link">Công nợ</a>
+                <div id="menu-fin" class="submenu <?= (strpos($act, 'supplier') !== false || $act == 'payables') ? 'show' : '' ?>">
+                    <a href="index.php?action=supplier-list" class="nav-link <?= ($act == 'supplier-list') ? 'active' : '' ?>">Nhà cung cấp</a>
+                    <a href="index.php?action=payables" class="nav-link <?= ($act == 'payables') ? 'active' : '' ?>">Công nợ</a>
+                </div>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="javascript:void(0)" onclick="toggleMenu('menu-report')">
+                    <div><i class="fas fa-chart-line me-2"></i> Báo cáo</div>
+                    <i class="fas fa-chevron-down small"></i>
+                </a>
+                <div id="menu-report" class="submenu <?= (strpos($act, 'reports-') !== false) ? 'show' : '' ?>">
+                    <a href="index.php?action=reports-profitability" class="nav-link <?= ($act == 'reports-profitability') ? 'active' : '' ?>">Báo cáo Lãi/Lỗ</a>
                 </div>
             </li>
 
             <li class="nav-item">
                 <a href="index.php?action=user-list" class="nav-link <?= ($act == 'user-list') ? 'active' : '' ?>">
-                    <div class="d-flex align-items-center"><i class="fas fa-users-cog me-2"></i> Quản lý Tài khoản</div>
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a href="#" class="nav-link">
-                    <div class="d-flex align-items-center"><i class="fas fa-chart-line me-2"></i> Báo cáo</div>
+                    <div><i class="fas fa-users-cog me-2"></i> Quản lý Tài khoản</div>
                 </a>
             </li>
         </ul>
     </div>
 
-    <ul class="nav flex-column">
-        <li class="nav-item">
-            <a href="index.php?action=dashboard" class="nav-link <?= ($act=='dashboard'||$act=='')?'active':'' ?>">
-                <div class="d-flex align-items-center"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</div>
-            </a>
-        </li>
-        
-        <li class="nav-item">
-            <a class="nav-link" href="#" onclick="toggleMenu('menu-tour'); return false;">
-                <div class="d-flex align-items-center"><i class="fas fa-suitcase me-2"></i> Quản lý Tour</div>
-                <i class="fas fa-chevron-down small"></i>
-            </a>
-            <div id="menu-tour" class="submenu <?= (strpos($act, 'tour')!==false || strpos($act, 'index')!==false)?'show':'' ?>">
-                <a href="index.php?action=index" class="nav-link text-white">Danh sách Tour</a>
-                <a href="#" class="nav-link">Tour Theo Yêu Cầu</a>
-            </div>
-        </li>
+    <div class="main-content">
 
-        <li class="nav-item">
-            <a class="nav-link" href="#" onclick="toggleMenu('menu-booking'); return false;">
-                <div class="d-flex align-items-center"><i class="fas fa-shopping-cart me-2"></i> Booking & Sales</div>
-                <i class="fas fa-chevron-down small"></i>
-            </a>
-            <div id="menu-booking" class="submenu <?= (strpos($act, 'booking')!==false || strpos($act, 'customer')!==false)?'show':'' ?>">
-                <a href="index.php?action=booking-create" class="nav-link">Tạo Booking Mới</a>
-                <a href="index.php?action=booking-list" class="nav-link">Quản lý Booking</a>
-                <a href="index.php?action=customer-list" class="nav-link">Quản lý Khách hàng</a>
-            </div>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link" href="#" onclick="toggleMenu('menu-ops'); return false;">
-                <div class="d-flex align-items-center"><i class="fas fa-cogs me-2"></i> Điều hành</div>
-                <i class="fas fa-chevron-down small"></i>
-            </a>
-            <div id="menu-ops" class="submenu <?= (strpos($act, 'guide')!==false)?'show':'' ?>">
-                <a href="index.php?action=guide-list" class="nav-link">Quản lý HDV</a>
-                <a href="#" class="nav-link">Lịch khởi hành</a>
-                <a href="#" class="nav-link">Đặt dịch vụ (Xe/KS)</a>
-            </div>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link" href="#" onclick="toggleMenu('menu-fin'); return false;">
-                <div class="d-flex align-items-center"><i class="fas fa-file-invoice-dollar me-2"></i> Tài chính & NCC</div>
-                <i class="fas fa-chevron-down small"></i>
-            </a>
-            <div id="menu-fin" class="submenu <?= (strpos($act, 'supplier')!==false || $act=='payables')?'show':'' ?>">
-                <a href="index.php?action=supplier-list" class="nav-link">Nhà cung cấp</a>
-                <a href="index.php?action=payables" class="nav-link">Công nợ (Phải trả)</a>
-            </div>
-        </li>
-        
-        <li class="nav-item">
-            <a class="nav-link" href="#" onclick="toggleMenu('menu-report'); return false;">
-                <div class="d-flex align-items-center"><i class="fas fa-chart-line me-2"></i> Báo cáo</div>
-                <i class="fas fa-chevron-down small"></i>
-            </a>
-            <div id="menu-report" class="submenu <?= (strpos($act, 'reports-')!==false)?'show':'' ?>">
-                <a href="index.php?action=reports-profitability" class="nav-link">Báo cáo Lãi/Lỗ</a>
-                <a href="#" class="nav-link">Tỷ lệ Chuyển đổi</a>
-                <a href="#" class="nav-link">Đánh giá Dịch vụ</a>
-            </div>
-        </li>
-        <li class="nav-item">
-            <a href="index.php?action=user-list" class="nav-link <?= ($act=='user-list')?'active':'' ?>">
-                <div class="d-flex align-items-center"><i class="fas fa-users-cog me-2"></i> Quản lý Tài khoản</div>
-            </a>
-        </li>
-    </ul>
-</div>
-
-<div class="main-content">
+    <script>
+        function toggleMenu(id) {
+            const menu = document.getElementById(id);
+            const isShown = menu.classList.contains('show');
+            
+            // Đóng tất cả các menu đang mở khác để tạo hiệu ứng gọn gàng
+            document.querySelectorAll('.submenu').forEach(sub => sub.classList.remove('show'));
+            
+            // Nếu menu click chưa mở thì mới mở
+            if (!isShown) {
+                menu.classList.add('show');
+            }
+        }
+    </script>
