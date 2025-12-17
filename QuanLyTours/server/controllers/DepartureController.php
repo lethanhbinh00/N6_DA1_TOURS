@@ -1,16 +1,19 @@
 <?php
 require_once __DIR__ . '/../models/Departure.php';
+require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../models/Booking.php';
 
 class DepartureController
 {
     private $model;
+    private $db;
 
     public function __construct()
     {
         // Ensure we pass a PDO connection into the model (Database class used elsewhere)
-        require_once __DIR__ . '/../config/Database.php';
         $database = new Database();
         $db = $database->getConnection();
+        $this->db = $db;
         $this->model = new Departure($db);
     }
 
@@ -21,6 +24,7 @@ class DepartureController
         $status = $_GET['status'] ?? '';
         $departures = $this->model->getAllFiltered($keyword, $status);
         // compute attendance completion status for each departure
+        $bookingModel = new Booking($this->db);
         foreach ($departures as &$d) {
             $pid = $d['id'];
             $passengers = $this->model->getPassengers($d['tour_id'], $d['start_date']);
@@ -32,14 +36,21 @@ class DepartureController
             foreach ($passengers as $p) {
                 $bid = $p['id'];
                 if (isset($attendance[$bid])) {
-                    $s = $attendance[$bid]['status'];
-                    if ($s == 'present') $present++;
-                    elseif ($s == 'late') $late++;
+                    $s = strtolower(trim($attendance[$bid]['status'] ?? ''));
+                    if ($s === 'present') $present++;
+                    elseif ($s === 'late') $late++;
                     else $absent++;
                 }
             }
             $d['attendance_summary'] = ['total' => $total, 'present' => $present, 'late' => $late, 'absent' => $absent];
             $d['attendance_complete'] = ($total > 0 && ($present + $late) === $total);
+
+            // count bookings for this tour on that date and prepare booking-list link
+            $tourId = $d['tour_id'] ?? null;
+            $start = $d['start_date'] ?? null;
+            $bookings = $bookingModel->getAll(null, null, $start, $start, $tourId);
+            $d['booking_count'] = is_array($bookings) ? count($bookings) : 0;
+            $d['booking_link'] = "index.php?action=booking-list&tour_id=" . urlencode($tourId) . "&date_from=" . urlencode($start) . "&date_to=" . urlencode($start);
         }
         unset($d);
 
@@ -100,9 +111,9 @@ class DepartureController
         foreach ($passengers as $p) {
             $bid = $p['id'];
             if (isset($attendanceRecords[$bid])) {
-                $s = $attendanceRecords[$bid]['status'];
-                if ($s == 'present') $present++;
-                elseif ($s == 'late') $late++;
+                $s = strtolower(trim($attendanceRecords[$bid]['status'] ?? ''));
+                if ($s === 'present') $present++;
+                elseif ($s === 'late') $late++;
                 else $absent++;
             }
         }
@@ -114,6 +125,14 @@ class DepartureController
             'absent' => $absent,
             'complete' => ($totalPassengers > 0 && ($present + $late) === $totalPassengers)
         ];
+
+        // booking count/link for this departure
+        $bookingModel = new Booking($this->db);
+        $start = $departure['start_date'] ?? null;
+        $tourId = $departure['tour_id'] ?? null;
+        $bookings = $bookingModel->getAll(null, null, $start, $start, $tourId);
+        $booking_count = is_array($bookings) ? count($bookings) : 0;
+        $booking_link = "index.php?action=booking-list&tour_id=" . urlencode($tourId) . "&date_from=" . urlencode($start) . "&date_to=" . urlencode($start);
 
         include __DIR__ . '/../../views/departures/detail.php';
     }

@@ -154,9 +154,10 @@ class Departure
     public function getPassengers($tour_id, $date)
     {
         $stmt = $this->conn->prepare(
-            "SELECT b.id, b.customer_name, b.customer_phone, b.customer_email, b.adults, b.children, b.note
-             FROM bookings b
-             WHERE b.tour_id = ? AND b.travel_date = ?"
+            "SELECT b.id, b.booking_code, b.customer_name, b.customer_phone, b.customer_email, b.customer_id_card,
+                    b.pickup_location, b.adults, b.children, b.total_price, b.status, b.note, b.travel_date, b.return_date
+                 FROM bookings b
+                 WHERE b.tour_id = ? AND DATE(b.travel_date) = DATE(?)"
         );
         $stmt->execute([$tour_id, $date]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -181,7 +182,7 @@ class Departure
         }
     }
 
-    // Lưu báo cáo HDV/diễn biến tour
+
     public function saveReport($data)
     {
         try {
@@ -207,7 +208,7 @@ class Departure
         }
     }
 
-    // Lưu điểm danh/attendance (mảng passenger_id => status)
+
     public function saveAttendance($departure_id, $attendance)
     {
         $this->conn->beginTransaction();
@@ -230,6 +231,45 @@ class Departure
             }
 
             $this->conn->commit();
+
+
+            try {
+                $stmtDep = $this->conn->prepare("SELECT tour_id, start_date FROM departures WHERE id = ? LIMIT 1");
+                $stmtDep->execute([$departure_id]);
+                $dep = $stmtDep->fetch(PDO::FETCH_ASSOC);
+                if ($dep) {
+                    $tourId = $dep['tour_id'];
+                    $start = $dep['start_date'];
+                    $stmtP = $this->conn->prepare("SELECT COUNT(*) as total FROM bookings WHERE tour_id = ? AND DATE(travel_date) = DATE(?)");
+                    $stmtP->execute([$tourId, $start]);
+                    $total = (int)($stmtP->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+                    $stmtA = $this->conn->prepare("SELECT status, COUNT(*) as cnt FROM departure_attendance WHERE departure_id = ? GROUP BY status");
+                    $stmtA->execute([$departure_id]);
+                    $rows = $stmtA->fetchAll(PDO::FETCH_ASSOC);
+                    $present = 0;
+                    $late = 0;
+                    foreach ($rows as $r) {
+                        $s = strtolower(trim($r['status'] ?? ''));
+                        if ($s === 'present') $present += (int)$r['cnt'];
+                        elseif ($s === 'late') $late += (int)$r['cnt'];
+                    }
+                    $complete = ($total > 0 && ($present + $late) === $total) ? 1 : 0;
+
+
+                    try {
+                        $stmtCheck = $this->conn->prepare("SHOW COLUMNS FROM `departures` LIKE 'attendance_complete'");
+                        $stmtCheck->execute();
+                        if ($stmtCheck->fetch() !== false) {
+                            $stmtUpd = $this->conn->prepare("UPDATE departures SET attendance_complete = ? WHERE id = ?");
+                            $stmtUpd->execute([$complete, $departure_id]);
+                        }
+                    } catch (Exception $e) {
+                    }
+                }
+            } catch (Exception $e) {
+            }
+
             return true;
         } catch (Exception $e) {
             $this->conn->rollBack();
@@ -245,7 +285,6 @@ class Departure
 
     public function update($data)
     {
-        // check if guide_id column exists
         $hasGuideCol = false;
         try {
             $stmtCheck = $this->conn->prepare("SHOW COLUMNS FROM `departures` LIKE 'guide_id'");

@@ -17,13 +17,14 @@ class BookingController {
         
         $keyword  = $_GET['keyword'] ?? ''; $status   = $_GET['status'] ?? '';
         $dateFrom = $_GET['date_from'] ?? ''; $dateTo   = $_GET['date_to'] ?? '';
+        $tourId   = $_GET['tour_id'] ?? null;
 
         if ((!empty($dateFrom) && empty($dateTo)) || (empty($dateFrom) && !empty($dateTo))) {
              echo "<script>alert('Vui lòng chọn đầy đủ TỪ NGÀY và ĐẾN NGÀY để lọc chính xác!');</script>";
              $dateFrom = ''; $dateTo = '';
         }
 
-        $bookings = $bookingModel->getAll($keyword, $status, $dateFrom, $dateTo);
+        $bookings = $bookingModel->getAll($keyword, $status, $dateFrom, $dateTo, $tourId);
         
         // Xử lý null
         if (!empty($bookings)) {
@@ -218,6 +219,25 @@ class BookingController {
             $suppliers = (new Supplier($db))->getAll(); 
 
             require_once __DIR__ . '/../../views/booking/operations.php';
+        }
+    }
+
+    // 12b. Trang Pax - danh sách thành viên riêng
+    public function pax()
+    {
+        $id = $_GET['id'] ?? null;
+        if ($id) {
+            $db = (new Database())->getConnection();
+            $booking = (new Booking($db))->getById($id);
+            if (!$booking) {
+                echo "Không tìm thấy đơn hàng!";
+                die();
+            }
+            $tour = (new Tour($db))->getById($booking['tour_id']);
+            $opModel = new Operation($db);
+            $paxList = $opModel->getPaxByBooking($id);
+
+            require_once __DIR__ . '/../../views/booking/pax.php';
         }
     }
 

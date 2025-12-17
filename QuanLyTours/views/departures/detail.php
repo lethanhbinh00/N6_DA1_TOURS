@@ -10,8 +10,13 @@
         <div class="col-lg-8">
             <div class="card shadow-sm mb-3">
                 <div class="card-body">
-                    <h5 class="fw-bold"><?= htmlspecialchars($departure['id'] . ' — ' . ($departure['tour_id'] ?? '')) ?></h5>
-                    <div class="small text-muted">Ngày khởi hành: <?= htmlspecialchars($departure['start_date']) ?></div>
+                    <?php $tourStart = $departure['start_date'] ?? '';
+                    $tourId = $departure['tour_id'] ?? ''; ?>
+                    <h5 class="fw-bold">
+                        <?= htmlspecialchars($departure['id']) ?> —
+                        <a href="index.php?action=booking-list&tour_id=<?= urlencode($tourId) ?>&date_from=<?= urlencode($tourStart) ?>&date_to=<?= urlencode($tourStart) ?>">Tour #<?= htmlspecialchars($tourId) ?></a>
+                    </h5>
+                    <div class="small text-muted">Ngày khởi hành: <?= htmlspecialchars($departure['start_date'] ?? '') ?></div>
                     <div class="mt-3">
                         <h6 class="fw-bold">Lịch trình (Itinerary)</h6>
                         <?php if (!empty($itinerary)): ?>
@@ -19,8 +24,8 @@
                                 <?php foreach ($itinerary as $it): ?>
                                     <li class="list-group-item">
                                         <strong>Ngày <?= $it['day_number'] ?>:</strong>
-                                        <div><?= htmlspecialchars($it['title'] ?: 'Không tiêu đề') ?></div>
-                                        <div class="small text-muted"><?= nl2br(htmlspecialchars($it['description'])) ?></div>
+                                        <div><?= htmlspecialchars($it['title'] ?? 'Không tiêu đề') ?></div>
+                                        <div class="small text-muted"><?= nl2br(htmlspecialchars($it['description'] ?? '')) ?></div>
                                     </li>
                                 <?php endforeach; ?>
                             </ul>
@@ -53,22 +58,38 @@
                         <table class="table table-sm mb-0">
                             <thead class="table-light">
                                 <tr>
+                                    <th>Mã BK</th>
                                     <th>Khách</th>
                                     <th>SĐT</th>
                                     <th>Số người</th>
                                     <th>Ghi chú</th>
+                                    <th>Trạng thái</th>
                                     <th>Điểm danh</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (!empty($passengers)): ?>
                                     <?php foreach ($passengers as $p): ?>
-                                        <?php $a = $attendanceRecords[$p['id']] ?? null; $sel = $a['status'] ?? ''; $noteVal = $a['note'] ?? ''; ?>
+                                        <?php $a = $attendanceRecords[$p['id']] ?? null;
+                                        $sel = $a['status'] ?? '';
+                                        $noteVal = $a['note'] ?? ''; ?>
                                         <tr>
-                                            <td><?= htmlspecialchars($p['customer_name']) ?></td>
-                                            <td><?= htmlspecialchars($p['customer_phone']) ?></td>
+                                            <td class="fw-bold text-primary"><?= htmlspecialchars($p['booking_code'] ?? '') ?></td>
+                                            <td><?= htmlspecialchars($p['customer_name'] ?? '') ?>
+                                                <?php if (!empty($p['customer_id_card'])): ?><div class="small text-muted">ID: <?= htmlspecialchars($p['customer_id_card']) ?></div><?php endif; ?>
+                                            </td>
+                                            <td><?= htmlspecialchars($p['customer_phone'] ?? '') ?><br>
+                                                <div class="small text-muted"><?= htmlspecialchars($p['customer_email'] ?? '') ?></div>
+                                            </td>
                                             <td><?= ($p['adults'] + ($p['children'] ?? 0)) ?></td>
-                                            <td><?= htmlspecialchars($p['note']) ?></td>
+                                            <td><?= htmlspecialchars($p['note'] ?? '') ?><br><?php if (!empty($p['pickup_location'])): ?><div class="small text-muted">Đón: <?= htmlspecialchars($p['pickup_location']) ?></div><?php endif; ?></td>
+                                            <td>
+                                                <?php $st = $p['status'] ?? 'confirmed';
+                                                $cls = ($st == 'completed') ? 'success' : (($st == 'deposited') ? 'warning text-dark' : (($st == 'cancelled') ? 'danger' : 'secondary'));
+                                                ?>
+                                                <span class="badge bg-<?= $cls ?> small"><?= ucfirst($st) ?></span>
+                                                <?php if (!empty($p['total_price'])): ?><div class="small text-muted mt-1"><?= number_format($p['total_price']) ?> đ</div><?php endif; ?>
+                                            </td>
                                             <td>
                                                 <select name="attendance[<?= $p['id'] ?>][status]" class="form-select form-select-sm">
                                                     <option value="present" <?= ($sel == 'present') ? 'selected' : '' ?>>Có mặt</option>
@@ -80,7 +101,9 @@
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <tr><td colspan="5" class="text-center text-muted py-3">Chưa có khách</td></tr>
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-3">Chưa có khách</td>
+                                    </tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
@@ -98,14 +121,15 @@
                 <div class="card-body">
                     <h6 class="fw-bold">Thông tin nhanh</h6>
                     <div>Seats: <?= htmlspecialchars($departure['seats'] ?? '') ?></div>
-                    <div class="small text-muted">Tour ID: <?= htmlspecialchars($departure['tour_id']) ?></div>
+                    <div class="small text-muted">Tour ID: <a href="<?= $booking_link ?>"><?= htmlspecialchars($departure['tour_id']) ?></a></div>
+                    <div class="mt-1"><a href="<?= $booking_link ?>" class="badge bg-primary text-white small">Xem đặt: <?= $booking_count ?></a></div>
                 </div>
             </div>
 
             <div class="card shadow-sm mb-3">
                 <div class="card-body">
                     <h6 class="fw-bold">Tình trạng điểm danh</h6>
-                    <?php $as = $attendanceSummary ?? ['total'=>0,'present'=>0,'late'=>0,'absent'=>0,'complete'=>false]; ?>
+                    <?php $as = $attendanceSummary ?? ['total' => 0, 'present' => 0, 'late' => 0, 'absent' => 0, 'complete' => false]; ?>
                     <div>Tổng khách: <strong><?= $as['total'] ?></strong></div>
                     <div class="text-success">Có mặt: <strong><?= $as['present'] ?></strong></div>
                     <div class="text-warning">Đến muộn: <strong><?= $as['late'] ?></strong></div>

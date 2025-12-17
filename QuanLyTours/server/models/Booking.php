@@ -7,14 +7,15 @@ class Booking {
     }
 
     // 1. Lấy danh sách (Có bộ lọc)
-    public function getAll($keyword = null, $status = null, $dateFrom = null, $dateTo = null) {
-        // [ĐÃ SỬA] Chọn t.min_deposit (Đảm bảo đã chạy SQL BƯỚC 1)
-        $sql = "SELECT b.*, t.name as tour_name, t.code as tour_code, t.min_deposit 
-                FROM bookings b 
-                LEFT JOIN tours t ON b.tour_id = t.id 
-                LEFT JOIN customers c ON b.customer_id = c.id
-                WHERE 1=1"; 
-        
+    public function getAll($keyword = null, $status = null, $dateFrom = null, $dateTo = null, $tourId = null)
+    {
+        // Note: some installations may not have `t.min_deposit` column — avoid selecting it to prevent errors
+        $sql = "SELECT b.*, t.name as tour_name, t.code as tour_code 
+            FROM bookings b 
+            LEFT JOIN tours t ON b.tour_id = t.id 
+            LEFT JOIN customers c ON b.customer_id = c.id
+            WHERE 1=1";
+
         $params = [];
         if (!empty($keyword)) {
             $sql .= " AND (b.booking_code LIKE ? OR c.full_name LIKE ? OR c.phone LIKE ?)";
@@ -22,6 +23,10 @@ class Booking {
             array_push($params, $searchTerm, $searchTerm, $searchTerm);
         }
         if (!empty($status)) { $sql .= " AND b.status = ?"; $params[] = $status; }
+        if (!empty($tourId)) {
+            $sql .= " AND b.tour_id = ?";
+            $params[] = $tourId;
+        }
         if (!empty($dateFrom)) { $sql .= " AND b.travel_date >= ?"; $params[] = $dateFrom; }
         if (!empty($dateTo)) { $sql .= " AND b.travel_date <= ?"; $params[] = $dateTo; }
 
@@ -57,8 +62,28 @@ class Booking {
                 ':total'  => $data['total_price'],
                 ':note'   => $data['note']
             ]);
-            
-            return $this->conn->lastInsertId(); 
+            $newId = $this->conn->lastInsertId();
+
+            // Auto-create a departure for this tour/date if not exists
+            try {
+                $tourId = $data['tour_id'];
+                $startDate = $data['travel_date'];
+                // compute seats as number of pax booked (adults + children)
+                $seats = (int)$data['adults'] + (int)$data['children'];
+
+                $stmtCheck = $this->conn->prepare("SELECT id FROM departures WHERE tour_id = ? AND start_date = ? LIMIT 1");
+                $stmtCheck->execute([$tourId, $startDate]);
+                $exists = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+                if (!$exists) {
+                    // Insert minimal departure record. Some installations may have guide_id/ note columns; use column list without guide_id.
+                    $stmtIns = $this->conn->prepare("INSERT INTO departures (tour_id, start_date, seats) VALUES (?, ?, ?)");
+                    $stmtIns->execute([$tourId, $startDate, $seats]);
+                }
+            } catch (Exception $e) {
+                // non-fatal: ignore so booking creation still succeeds
+            }
+
+            return $newId;
         } catch (Exception $e) { return "Error: " . $e->getMessage(); }
     }
 

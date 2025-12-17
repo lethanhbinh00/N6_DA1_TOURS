@@ -53,7 +53,14 @@
                         <?php foreach ($departures as $k => $row): ?>
                             <tr>
                                 <td class="text-center"><?= $k + 1 ?></td>
-                                <td class="text-start fw-bold"><?= htmlspecialchars($row['tour_name'] ?? 'N/A') ?></td>
+                                <td class="text-start fw-bold">
+                                    <?php $start = $row['start_date'] ?? '';
+                                    $tourId = $row['tour_id'] ?? '';
+                                    $bcount = $row['booking_count'] ?? 0;
+                                    $blink = $row['booking_link'] ?? "index.php?action=booking-list"; ?>
+                                    <a href="<?= $blink ?>" class="me-2"><?= htmlspecialchars($row['tour_name'] ?? 'N/A') ?></a>
+                                    <a href="<?= $blink ?>" class="badge bg-primary text-white small">Đặt: <?= $bcount ?></a>
+                                </td>
                                 <td class="text-center"><?= htmlspecialchars($row['start_date']) ?></td>
                                 <td class="text-center"><?= htmlspecialchars($row['seats']) ?></td>
                                 <td class="text-center">
@@ -77,7 +84,7 @@
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">Chưa có lịch khởi hành.</td>
+                            <td colspan="7" class="text-center py-5 text-muted">Chưa có lịch khởi hành.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
