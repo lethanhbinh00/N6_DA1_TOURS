@@ -6,17 +6,6 @@ class Booking {
         $this->conn = $db;
     }
 
-<<<<<<< HEAD
-    // 1. Lấy danh sách
-    public function getAll($keyword = null, $status = null, $dateFrom = null, $dateTo = null) {
-        $sql = "SELECT b.*, t.name as tour_name, t.code as tour_code, t.min_deposit,
-                       c.full_name as customer_name, c.phone as customer_phone, c.id_card as customer_id_card
-                FROM bookings b 
-                LEFT JOIN tours t ON b.tour_id = t.id 
-                LEFT JOIN customers c ON b.customer_id = c.id
-                WHERE 1=1"; 
-        
-=======
     // 1. Lấy danh sách (Có bộ lọc)
     public function getAll($keyword = null, $status = null, $dateFrom = null, $dateTo = null, $tourId = null)
     {
@@ -27,7 +16,6 @@ class Booking {
             LEFT JOIN customers c ON b.customer_id = c.id
             WHERE 1=1";
 
->>>>>>> origin/main
         $params = [];
         if (!empty($keyword)) {
             $sql .= " AND (b.booking_code LIKE ? OR c.full_name LIKE ? OR c.phone LIKE ?)";
@@ -51,11 +39,8 @@ class Booking {
     // 2. Tạo mới
     public function create($data) {
         try {
-<<<<<<< HEAD
-=======
             $booking_code = "BK-" . time();
             // [CẬP NHẬT] Đã thêm các cột supplier_id và pickup_location
->>>>>>> origin/main
             $query = "INSERT INTO bookings 
                      (booking_code, tour_id, customer_id, customer_name, customer_phone, customer_id_card, customer_email, 
                       guide_id, transport_supplier_id, hotel_supplier_id, pickup_location, flight_number, room_details, 
