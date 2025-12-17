@@ -128,7 +128,6 @@ class Booking {
                       WHERE id=:id";
             
             $stmt = $this->conn->prepare($query);
-<<<<<<< HEAD
             $flight = empty($data['flight_number']) ? null : $data['flight_number'];
             $room   = empty($data['room_details']) ? null : $data['room_details'];
             
@@ -152,13 +151,6 @@ class Booking {
                 ':total'=>$data['total_price'], 
                 ':note'=>$data['note'], 
                 ':id'=>$id
-=======
-            $stmt->execute([
-                ':tid'=>$data['tour_id'], ':cid'=>$data['customer_id'], ':trans'=>$data['transport_id'], 
-                ':hotel'=>$data['hotel_id'], ':pickup'=>$data['pickup_location'], ':start'=>$data['travel_date'], 
-                ':end'=>$data['return_date'], ':adults'=>$data['adults'], ':child'=>$data['children'], 
-                ':total'=>$data['total_price'], ':note'=>$data['note'], ':id'=>$id
->>>>>>> origin/main
             ]);
         } catch (Exception $e) { return $e->getMessage(); }
     }
