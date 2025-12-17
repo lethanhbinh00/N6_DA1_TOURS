@@ -1,5 +1,5 @@
 <?php
-// 1. CẤU HÌNH & SESSION
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -126,6 +126,12 @@ switch ($action) {
     case 'customer-update': $cusController->update(); break;
     case 'customer-detail': $cusController->detail(); break;
     case 'customer-delete': $cusController->delete(); break;
+    case 'booking-pax-import': 
+    $bookingController->paxImport(); 
+    break;
+    case 'booking-pax-delete-all': 
+    $bookingController->paxDeleteAll(); 
+    break;
 
     // GUIDE
     case 'guide-list':   $guideController->index(); break;
@@ -136,6 +142,59 @@ switch ($action) {
     case 'supplier-list':   $supController->index(); break;
     case 'supplier-store':  $supController->store(); break;
     case 'supplier-delete': $supController->delete(); break;
+
+    case 'receipt':
+        // Xử lý In Phiếu thu lẻ
+        $bookingController->receipt();
+        break;
+
+    case 'payment-delete':
+        // Xử lý Xóa giao dịch thanh toán (Cần RBAC)
+        // Nếu bạn đã có hàm checkRole(), hãy sử dụng nó ở đây:
+        // checkRole(['admin']); 
+        $bookingController->paymentDelete();
+        break;
+
+    case 'reports-profitability':
+        // Xử lý Báo cáo Lãi/Lỗ
+        $bookingController->profitabilityReport();
+        break;
+        
+    case 'payables':
+        // Xử lý Trang Công nợ (Phải trả)
+        // LƯU Ý: Bạn cần tạo hàm payablesIndex() trong BookingController.php
+        $bookingController->payablesIndex(); 
+        break;
+        case 'assign-guide':
+        // Xử lý Phân công HDV
+        $bookingController->assignGuide();
+        break;
+        // index.php
+case 'update-supplier-payment':
+    // Gọi hàm xử lý trong BookingController
+    $bookingController->updateSupplierPayment();
+    break;
+    // index.php
+case 'create-supplier-payment':
+    $bookingController->showSupplierPaymentForm(); // Hiển thị form
+    break;
+case 'store-supplier-payment':
+    $bookingController->storeSupplierPayment(); // Lưu vào DB
+    break;
+    // --- DEFAULT ---
+    case 'update-supplier-payment':
+    $bookingController->updateSupplierPayment();
+    break;
+    case 'update-pax-status-ajax':
+    $bookingController->updatePaxStatusAjax();
+    break;
+    case 'store-tour-log':
+        $bookingController->storeTourLog();
+        break;
+        case 'delete-tour-log':
+        $bookingController->deleteTourLog();
+        break;
+    // ...
 
     // CAR BOOKING & DEPARTURES
     case 'car-booking':

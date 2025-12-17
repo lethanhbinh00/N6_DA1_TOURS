@@ -1,5 +1,5 @@
 <?php
-// [QUAN TRỌNG] Khai báo tất cả các Models
+// [CẦN CÓ] Khai báo tất cả các Models
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../models/Booking.php';
 require_once __DIR__ . '/../models/Tour.php';
@@ -7,6 +7,9 @@ require_once __DIR__ . '/../models/Customer.php';
 require_once __DIR__ . '/../models/Operation.php';
 require_once __DIR__ . '/../models/Supplier.php';
 require_once __DIR__ . '/../models/SystemLog.php';
+
+
+
 
 class BookingController {
 
@@ -65,7 +68,9 @@ class BookingController {
             $booking = (new Booking($db))->getById($id);
             $tours = (new Tour($db))->getAll();
             $customers = (new Customer($db))->getAll();
-            $suppliers = (new Supplier($db))->getAll();
+            // [CẦN THIẾT] Fetch danh sách Suppliers
+            $suppliers = (new Supplier($db))->getAll(); 
+
             if (!$booking) { echo "Không tìm thấy đơn hàng!"; die(); }
             require_once __DIR__ . '/../../views/booking/edit.php';
         }
@@ -146,7 +151,7 @@ class BookingController {
             $total = (float)$_POST['total_price_hidden'];
             $method = $_POST['payment_method'];
             $note = trim($_POST['payment_note']);
-            $minPercent = (int)$_POST['min_deposit_hidden']; 
+            $minPercent = (int)($_POST['min_deposit_hidden'] ?? 0); 
             $userId = $_SESSION['user_id'] ?? 1;
 
             $db = (new Database())->getConnection();
@@ -206,41 +211,45 @@ class BookingController {
     }
 
     // 12. Trang Điều hành
-    public function operations() {
-        $id = $_GET['id'] ?? null;
-        if ($id) {
-            $db = (new Database())->getConnection();
-            $booking = (new Booking($db))->getById($id);
-            $tour = (new Tour($db))->getById($booking['tour_id']);
-            
-            $opModel = new Operation($db);
-            $paxList = $opModel->getPaxByBooking($id);
-            $services = $opModel->getServicesByBooking($id);
-            $suppliers = (new Supplier($db))->getAll(); 
+    // server/controllers/BookingController.php
 
-            require_once __DIR__ . '/../../views/booking/operations.php';
-        }
+public function operations() {
+    // 1. Lấy ID booking từ URL
+    $id = isset($_GET['id']) ? $_GET['id'] : null;
+    if (!$id) {
+        header("Location: index.php?action=booking-list");
+        exit();
     }
 
-    // 12b. Trang Pax - danh sách thành viên riêng
-    public function pax()
-    {
-        $id = $_GET['id'] ?? null;
-        if ($id) {
-            $db = (new Database())->getConnection();
-            $booking = (new Booking($db))->getById($id);
-            if (!$booking) {
-                echo "Không tìm thấy đơn hàng!";
-                die();
-            }
-            $tour = (new Tour($db))->getById($booking['tour_id']);
-            $opModel = new Operation($db);
-            $paxList = $opModel->getPaxByBooking($id);
+    $db = (new Database())->getConnection();
+    
+    // 2. Khởi tạo các Model cần thiết
+    $opModel = new Operation($db);
+    $userModel = new User($db); // Khởi tạo model User để lấy danh sách nhân sự
 
-            require_once __DIR__ . '/../../views/booking/pax.php';
-        }
-    }
+    // 3. Truy vấn dữ liệu từ Database
+    // Nếu bạn đã có BookingModel
+$bookingModel = new Booking($db);
+$booking = $bookingModel->getBookingById($id);
+    $tour = $opModel->getTourById($booking['tour_id']);
+    $paxList = $opModel->getPaxByBooking($id);
+    $services = $opModel->getServicesByBooking($id);
+    $suppliers = $opModel->getSuppliers();
+    $tourLogs = $opModel->getTourLogs($id);
+    
+    // ĐÂY LÀ DÒNG QUAN TRỌNG NHẤT:
+    // Biến $users này sẽ được file operations.php sử dụng để chạy vòng lặp foreach trong Modal
+    $users = $userModel->getAllUsers(); 
 
+    // 4. Load giao diện
+// Sử dụng đường dẫn chuẩn để tránh lỗi trên Windows/Laragon
+$viewPath = __DIR__ . '/../../views/booking/operations.php';
+
+if (file_exists($viewPath)) {
+    require_once $viewPath;
+} else {
+    die("Lỗi: Không tìm thấy file giao diện tại: " . $viewPath);
+}}
     // 13. Thêm Pax
     public function paxStore() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -286,19 +295,27 @@ class BookingController {
     }
     
     // 15. Thêm Dịch vụ
-    public function serviceStore() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $db = (new Database())->getConnection();
-            (new Operation($db))->addService([
-                ':bid'  => $_POST['booking_id'],
-                ':sup'  => $_POST['supplier_id'],
-                ':type' => $_POST['service_type'],
-                ':desc' => $_POST['description'],
-                ':cost' => $_POST['cost']
-            ]);
-            header("Location: index.php?action=booking-ops&id=" . $_POST['booking_id']);
-        }
+    // server/controllers/BookingController.php
+public function serviceStore() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $db = (new Database())->getConnection();
+        $opModel = new Operation($db);
+        
+        $data = [
+            ':bid'  => $_POST['booking_id'],
+            ':sup'  => $_POST['supplier_id'],
+            ':type' => $_POST['service_type'],
+            ':desc' => $_POST['description'],
+            ':cost' => $_POST['cost']
+        ];
+        
+        $opModel->addService($data);
+        
+        // Quay lại trang điều hành
+        header("Location: index.php?action=booking-ops&id=" . $_POST['booking_id']);
+        exit();
     }
+}
 
     // 16. Xóa Dịch vụ
     public function serviceDelete() {
@@ -316,9 +333,16 @@ class BookingController {
         }
         $id = $_GET['id']; $bid = $_GET['bid'];
         $db = (new Database())->getConnection();
+        
+        $paymentInfo = (new Booking($db))->getPaymentById($id); 
         $result = (new Booking($db))->deletePayment($id);
         
         if ($result === "success") {
+            $logModel = new SystemLog($db);
+            $description = "Đã hủy giao dịch thu tiền: -".number_format($paymentInfo['amount'] ?? 0). " VNĐ. Mã BK: {$paymentInfo['booking_code']}";
+            $logModel->logAction('DELETE', 'Payment', $paymentInfo['id'] ?? 0, $description);
+
+            // [REDIRECT VỀ TRANG CHI TIẾT]
             header("Location: index.php?action=booking-detail&id=$bid&msg=payment_deleted");
         } else {
             echo "<script>alert('Lỗi: $result'); window.history.back();</script>";
@@ -328,56 +352,345 @@ class BookingController {
     // 18. In Phiếu thu lẻ
     public function receipt() {
         $id = $_GET['id']; $db = (new Database())->getConnection();
+        // Cần đảm bảo hàm getPaymentById trong Model Booking lấy đủ thông tin
         $payment = (new Booking($db))->getPaymentById($id);
         if (!$payment) { echo "Không tìm thấy phiếu!"; die(); }
         require_once __DIR__ . '/../../views/booking/receipt.php';
     }
 
 
-    // 19. Hàm phụ trợ xử lý Create/Update
+
+    // 19. Hàm phụ trợ xử lý Create/Update (QUAN TRỌNG NHẤT)
     private function processForm($mode) {
-        $db = (new Database())->getConnection(); $bookingModel = new Booking($db);
+    $db = (new Database())->getConnection();
+    $bookingModel = new Booking($db);
+    
+    // 1. Thu thập và chuẩn hóa dữ liệu từ $_POST
+    // Chuyển chuỗi rỗng thành NULL cho các ID để tránh lỗi ràng buộc Database (Foreign Key)
+    $data = [
+        'tour_id'           => $_POST['tour_id'], 
+        'customer_id'       => $_POST['customer_id'],
+        'customer_name'     => $_POST['customer_name'] ?? '',
+        'customer_id_card'  => $_POST['customer_id_card'] ?? '',
+        'customer_phone'    => $_POST['customer_phone'] ?? '',
+        'customer_email'    => $_POST['customer_email'] ?? '',
         
-        // [FIX LỖI SQL] Chuyển chuỗi rỗng thành NULL cho các cột INT
-        $transportId = empty($_POST['transport_supplier_id']) ? null : $_POST['transport_supplier_id'];
-        $hotelId     = empty($_POST['hotel_supplier_id']) ? null : $_POST['hotel_supplier_id'];
-        $customerId  = $_POST['customer_id'];
-
-        $data = [
-            'tour_id' => $_POST['tour_id'], 
-            'transport_id' => $transportId,  
-            'hotel_id' => $hotelId,      
-            'pickup_location' => trim($_POST['pickup_location']),
-            'travel_date' => $_POST['travel_date'], 
-            'return_date' => $_POST['return_date'] ?? null, 
-            'customer_id' => $customerId,
-            'adults' => (int)$_POST['adults'], 
-            'children' => (int)$_POST['children'], 
-            'total_price' => $_POST['total_price'], 
-            'note' => $_POST['note']
-        ];
-
-        if (empty($data['customer_id'])) { echo "<script>alert('Vui lòng chọn khách hàng!'); window.history.back();</script>"; return; }
+        // Khớp tên cột với logic xử lý trong Model Booking.php
+        'transport_id'      => empty($_POST['transport_supplier_id']) ? null : $_POST['transport_supplier_id'],  
+        'hotel_id'          => empty($_POST['hotel_supplier_id']) ? null : $_POST['hotel_supplier_id'],
         
-        if ($mode == 'create') {
-            $newId = $bookingModel->create($data); 
-            if (is_numeric($newId)) {
-                $logModel = new SystemLog($db);
-                $logModel->logAction('CREATE', 'Booking', $newId, "Đã tạo mới Booking #{$newId}.");
+        'pickup_location'   => trim($_POST['pickup_location'] ?? ''),
+        'flight_number'     => $_POST['flight_number'] ?? '',
+        'room_details'      => $_POST['room_details'] ?? '',
+        'guide_id'          => empty($_POST['guide_id']) ? null : $_POST['guide_id'],
+        
+        'travel_date'       => $_POST['travel_date'], 
+        'return_date'       => $_POST['return_date'] ?? null, 
+        'adults'            => (int)$_POST['adults'], 
+        'children'          => (int)$_POST['children'], 
+        'total_price'       => $_POST['total_price'], 
+        'note'              => $_POST['note']
+    ];
 
-                 header("Location: index.php?action=booking-ops&id=$newId&msg=booking_success");
-            } else {
-                 echo "Lỗi tạo mới: " . $newId;
-            }
-        } else { 
-            $id = $_POST['id']; $result = $bookingModel->update($id, $data);
-            if ($result === "success") {
-                $logModel = new SystemLog($db);
-                $logModel->logAction('UPDATE', 'Booking', $id, "Đã cập nhật thông tin Booking ID #{$id}.");
-                header("Location: index.php?action=booking-list&msg=updated");
-            }
-            else echo "Lỗi cập nhật: " . $result;
+    // 2. Kiểm tra dữ liệu bắt buộc
+    if (empty($data['customer_id'])) { 
+        echo "<script>alert('Vui lòng chọn khách hàng!'); window.history.back();</script>"; 
+        return; 
+    }
+
+    // 3. Thực thi lưu dữ liệu (Đây là phần code bạn bị thiếu trước đó)
+    if ($mode == 'create') {
+        // Gọi lệnh tạo mới và kiểm tra kết quả trả về
+        $result = $bookingModel->create($data);
+        if ($result) {
+            // Chuyển hướng ngay lập tức để tránh reload gây duplicate dữ liệu hoặc màn hình trắng
+            header("Location: index.php?action=booking-list&msg=success");
+            exit(); 
+        } else {
+            die("Lỗi: Hệ thống không thể tạo Booking. Vui lòng kiểm tra lại thông tin tour hoặc khách hàng.");
+        }
+    } else {
+        // Xử lý cập nhật cho trường hợp Edit
+        $id = $_POST['id'];
+        $result = $bookingModel->update($id, $data);
+        header("Location: index.php?action=booking-list&msg=updated");
+        exit();
+    }
+}
+    
+    // 23. [MỚI] Phân công HDV (Assign Guide)
+    public function assignGuide() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $db = (new Database())->getConnection();
+            $bookingModel = new Booking($db);
+            
+            $bid = $_POST['booking_id'];
+            // [FIX CORE]: Đảm bảo nhận NULL nếu người dùng chọn '-- Bỏ phân công --'
+            $gid = empty($_POST['guide_id']) ? null : $_POST['guide_id']; 
+
+            $result = $bookingModel->assignGuide($bid, $gid);
+            
+            // Ghi Log và Redirect
+            $logModel = new SystemLog($db);
+            $logModel->logAction('UPDATE', 'Booking', $bid, "Phân công HDV (ID: $gid) cho Booking #$bid.");
+
+            header("Location: index.php?action=booking-ops&id=$bid&msg=guide_assigned");
         }
     }
+
+   public function updateSupplierPayment() {
+    // Sử dụng $_REQUEST để nhận cả GET (từ link) hoặc POST (từ form)
+    if (isset($_REQUEST['service_id']) && isset($_REQUEST['booking_id'])) {
+        $db = (new Database())->getConnection();
+        $opModel = new Operation($db);
+
+        $bid = $_REQUEST['booking_id'];
+        $sid = $_REQUEST['service_id'];
+        $status = $_REQUEST['status'] ?? 'paid';
+
+        // Thực hiện cập nhật vào Database
+        $opModel->updateSupplierPaymentStatus($sid, $status);
+
+        // Lưu nhật ký hệ thống nếu bạn có class SystemLog
+        if (class_exists('SystemLog')) {
+            $logModel = new SystemLog($db);
+            $logModel->logAction('PAY', 'Supplier', $sid, "Xác nhận thanh toán dịch vụ ID: $sid cho Booking #$bid");
+        }
+
+        // Chuyển hướng về trang điều hành kèm thông báo thành công
+        header("Location: index.php?action=booking-ops&id=$bid&msg=supplier_paid");
+        exit();
+    }
+}
+
+    public function profitabilityReport() {
+        $db = (new Database())->getConnection();
+        $bookingModel = new Booking($db);
+        
+        $dateFrom = $_GET['date_from'] ?? null;
+        $dateTo = $_GET['date_to'] ?? null;
+
+        $reports = $bookingModel->getFinancialSummary($dateFrom, $dateTo);
+
+        // Tính lợi nhuận (Profit) trong Controller
+        if (!empty($reports)) {
+            foreach ($reports as $key => $report) {
+                $reports[$key]['profit'] = $report['total_revenue'] - $report['total_cost'];
+            }
+        }
+        
+        // Cần có view mới cho báo cáo
+        require_once __DIR__ . '/../../views/reports/profitability.php';
+    }
+    // Thêm vào cuối file server/controllers/BookingController.php
+
+// 25. [MỚI] Trang Công nợ (Payables Index)
+public function payablesIndex() {
+    $db = (new Database())->getConnection();
+    $bookingModel = new Booking($db);
+    
+    // TẠM THỜI: Tái sử dụng hàm fetch báo cáo tài chính để có dữ liệu booking
+    $reports = $bookingModel->getFinancialSummary(); 
+
+    // Yêu cầu view mới để hiển thị công nợ
+    require_once __DIR__ . '/../../views/reports/payables.php';
+}
+
+public function updatePaxStatus() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' || isset($_REQUEST['pax_id'])) {
+            $bid = $_REQUEST['booking_id'];
+            $pid = $_REQUEST['pax_id'];
+            $status = $_REQUEST['status'];
+
+            $db = (new Database())->getConnection();
+            $opModel = new Operation($db);
+            
+            $opModel->updatePaxCheckinStatus($pid, $status);
+            header("Location: index.php?action=booking-ops&id=$bid&msg=pax_status_updated");
+        }
+    }
+
+    // 21. [MỚI] Cập nhật Ghi chú Yêu cầu đặc biệt của PAX
+    public function updatePaxNote() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $bid = $_POST['booking_id'];
+            $pid = $_POST['pax_id'];
+            $note = $_POST['special_requests'];
+
+            $db = (new Database())->getConnection();
+            $opModel = new Operation($db);
+            
+            $opModel->updatePaxSpecialRequest($pid, $note);
+            header("Location: index.php?action=booking-ops&id=$bid&msg=pax_note_updated");
+        }
+    }
+
+    // 22. [MỚI] Lưu Nhật ký Tour
+    // BookingController.php
+
+// 1. Hiển thị Form
+public function showSupplierPaymentForm() {
+    $sid = $_GET['service_id'];
+    $bid = $_GET['booking_id'];
+    
+    $db = (new Database())->getConnection();
+    $bookingModel = new Booking($db);
+    $opModel = new Operation($db);
+
+    $booking = $bookingModel->getById($bid);
+    $service = $opModel->getServiceById($sid); // Bạn cần viết hàm này trong Model Operation
+
+    require_once __DIR__ . '/../../views/financial/supplier_payment_form.php';
+}
+
+// 2. Lưu dữ liệu giao dịch
+public function storeSupplierPayment() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $db = (new Database())->getConnection();
+        $opModel = new Operation($db);
+
+        $sid = $_POST['service_id'];
+        $bid = $_POST['booking_id'];
+        $amount = $_POST['amount'];
+        $status = 'paid';
+
+        // Cập nhật trạng thái 'paid' cho dịch vụ
+        $opModel->updateSupplierPaymentStatus($sid, $status);
+
+        // (Tùy chọn) Lưu vào bảng lịch sử giao dịch (Payment Ledger)
+        // $opModel->saveSupplierTransaction($sid, $bid, $amount, $_POST['payment_method'], $_POST['note']);
+
+        header("Location: index.php?action=booking-ops&id=$bid&msg=supplier_paid");
+        exit();
+    }
+}
+
+public function paxImport() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['pax_file'])) {
+        $bookingId = $_POST['booking_id'];
+        $file = $_FILES['pax_file']['tmp_name'];
+
+        try {
+            $db = (new Database())->getConnection();
+            $opModel = new Operation($db);
+
+            // Mở file với chế độ đọc nhị phân để xử lý BOM
+            $handle = fopen($file, "r");
+            if ($handle !== FALSE) {
+                // Kiểm tra và bỏ qua ký tự BOM của UTF-8 (đặc thù của Google Sheets/Excel UTF-8)
+                $bom = fread($handle, 3);
+                if ($bom != "\xEF\xBB\xBF") {
+                    rewind($handle); // Quay lại đầu file nếu không có BOM
+                }
+
+                // Bỏ qua dòng tiêu đề
+                fgetcsv($handle, 1000, ",");
+
+                $importCount = 0;
+                while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                    if (empty($row[0])) continue;
+
+                    // KHÔNG dùng mb_convert_encoding nữa vì file từ Google Sheets đã là UTF-8 chuẩn
+                    // Chỉ làm sạch khoảng trắng
+                    $row = array_map('trim', $row);
+
+                    // Cắt chuỗi để đảm bảo không vượt quá 100 ký tự của Database
+                    $fullName = mb_substr($row[0], 0, 100, 'UTF-8'); 
+
+                    $paxData = [
+                        ':bid'  => $bookingId,
+                        ':name' => $fullName,
+                        // Chuyển đổi ngày tháng d/m/Y sang Y-m-d để khớp với kiểu date của DB
+                        ':dob'  => !empty($row[1]) ? date('Y-m-d', strtotime(str_replace('/', '-', $row[1]))) : null,
+                        ':gen'  => trim($row[2] ?? 'Nam'),
+                        ':note' => mb_substr(trim($row[3] ?? 'Import'), 0, 255, 'UTF-8')
+                    ];
+
+                    // Hàm addPax trong Operation.php sẽ tự chuyển Nam/Nữ sang male/female
+                    if ($opModel->addPax($paxData)) {
+                        $importCount++;
+                    }
+                }
+                fclose($handle);
+            }
+
+            header("Location: index.php?action=booking-ops&id=$bookingId&msg=import_success&count=$importCount");
+            exit();
+
+        } catch (Exception $e) {
+            die("Lỗi xử lý file: " . $e->getMessage());
+        }
+    }
+}
+public function paxDeleteAll() {
+    if (isset($_GET['booking_id'])) {
+        $bookingId = $_GET['booking_id'];
+        $db = (new Database())->getConnection();
+        $opModel = new Operation($db);
+        
+        if ($opModel->deleteAllPaxByBooking($bookingId)) {
+            header("Location: index.php?action=booking-ops&id=$bookingId&msg=delete_success");
+        }
+        exit();
+    }
+}
+public function updatePaxStatusAjax() {
+    $paxId = $_GET['pax_id'];
+    $status = $_GET['status'];
+    
+    $db = (new Database())->getConnection();
+    $opModel = new Operation($db);
+    
+    if ($opModel->updatePaxCheckinStatus($paxId, $status)) {
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false]);
+    }
+    exit(); // Kết thúc để không load giao diện
+}
+public function storeTourLog() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $db = (new Database())->getConnection();
+        $opModel = new Operation($db);
+
+        $data = [
+            ':bid'     => $_POST['booking_id'],
+            ':gid'     => $_POST['guide_id'],
+            ':date'    => $_POST['log_date'],
+            ':time'    => $_POST['log_time'] ?? date('H:i:s'),
+            ':type'    => $_POST['incident_type'],
+            ':details' => $_POST['details'],
+            ':photo'   => null // Nếu chưa làm phần upload ảnh
+        ];
+
+        if ($opModel->logTourIncident($data)) {
+            header("Location: index.php?action=booking-ops&id=" . $_POST['booking_id'] . "&msg=log_added");
+        } else {
+            echo "Lỗi khi lưu nhật ký!";
+        }
+    }
+}
+public function deleteTourLog() {
+    // 1. Lấy ID cần xóa và ID booking để quay lại trang cũ
+    $logId = $_GET['log_id'] ?? null;
+    $bookingId = $_GET['booking_id'] ?? null;
+
+    if ($logId && $bookingId) {
+        $db = (new Database())->getConnection();
+        $opModel = new Operation($db);
+
+        // 2. Gọi hàm xóa trong Model Operation
+        if ($opModel->deleteTourLog($logId)) {
+            // 3. Chuyển hướng về lại trang điều hành tour kèm thông báo
+            header("Location: index.php?action=booking-ops&id=" . $bookingId . "&msg=log_deleted");
+            exit();
+        } else {
+            die("Lỗi: Không thể xóa nhật ký.");
+        }
+    } else {
+        header("Location: index.php?action=booking-list");
+        exit();
+    }
+}
 }
 ?>
