@@ -1,61 +1,96 @@
 <?php require_once __DIR__ . '/../layouts/header.php'; ?>
 
-<div class="container-fluid py-4">
-
-    <?php if (isset($_GET['msg'])): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            Thao tác thành công!
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    <?php endif; ?>
-
+<div class="container-fluid p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold text-secondary"><i class="fas fa-calendar-alt me-2"></i>Quản lý khởi hành</h4>
-        <a href="index.php?action=departure-create" class="btn btn-primary">
-            <i class="fas fa-plus-circle me-1"></i> Thêm khởi hành
-        </a>
+        <h4 class="fw-bold text-secondary"><i class="fas fa-route me-2 text-primary"></i>Danh sách Lịch khởi hành</h4>
+        <a href="index.php?action=departure-create" class="btn btn-primary shadow-sm"><i class="fas fa-plus me-2"></i>Thêm Lịch</a>
+    </div>
+
+    <div class="filter-bar mb-3">
+        <form method="GET" class="row g-3 align-items-end">
+            <input type="hidden" name="action" value="departure-list">
+            <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted">Từ khóa</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" name="keyword" class="form-control border-start-0" placeholder="Tìm theo tên tour" value="<?= htmlspecialchars($_GET['keyword'] ?? '') ?>">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted">Tình trạng</label>
+                <select name="status" class="form-select">
+                    <option value="">-- Tất cả --</option>
+                    <option value="upcoming" <?= (($_GET['status'] ?? '') == 'upcoming') ? 'selected' : '' ?>>Sắp khởi hành</option>
+                    <option value="running" <?= (($_GET['status'] ?? '') == 'running') ? 'selected' : '' ?>>Đang chạy</option>
+                    <option value="completed" <?= (($_GET['status'] ?? '') == 'completed') ? 'selected' : '' ?>>Hoàn thành</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-primary w-100"><i class="fas fa-filter me-1"></i>Lọc</button>
+            </div>
+            <div class="col-md-2">
+                <a href="index.php?action=departure-list" class="btn btn-outline-secondary w-100">Reset</a>
+            </div>
+        </form>
     </div>
 
     <div class="card shadow-sm border-0">
-        <div class="card-body p-3">
+        <div class="card-body p-0">
             <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+                <thead class="bg-light text-secondary text-center">
                     <tr>
-                        <th>ID</th>
-                        <th>Tour</th>
+                        <th style="width:50px;">#</th>
+                        <th class="text-start">Tour</th>
                         <th>Ngày khởi hành</th>
-                        <th>Số chỗ</th>
-                        <th>Hành động</th>
+                        <th>Số ghế</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày tạo</th>
+                        <th style="width:160px;">Hành động</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (!empty($departures)): ?>
-                        <?php foreach ($departures as $d): ?>
+                        <?php foreach ($departures as $k => $row): ?>
                             <tr>
-                                <td><?= htmlspecialchars($d['id']) ?></td>
-                                <td><?= htmlspecialchars($d['tour_name'] ?? 'N/A') ?></td>
-                                <td><?= htmlspecialchars($d['start_date']) ?></td>
-                                <td><?= htmlspecialchars($d['seats']) ?></td>
-                                <td>
-                                    <a href="index.php?action=departure-edit&id=<?= $d['id'] ?>" class="btn btn-sm btn-outline-primary me-1">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="index.php?action=departure-delete&id=<?= $d['id'] ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Xóa khởi hành?');">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
+                                <td class="text-center"><?= $k + 1 ?></td>
+                                <td class="text-start fw-bold">
+                                    <?php $start = $row['start_date'] ?? '';
+                                    $tourId = $row['tour_id'] ?? '';
+                                    $bcount = $row['booking_count'] ?? 0;
+                                    $blink = $row['booking_link'] ?? "index.php?action=booking-list"; ?>
+                                    <a href="<?= $blink ?>" class="me-2"><?= htmlspecialchars($row['tour_name'] ?? 'N/A') ?></a>
+                                    <a href="<?= $blink ?>" class="badge bg-primary text-white small">Đặt: <?= $bcount ?></a>
+                                </td>
+                                <td class="text-center"><?= htmlspecialchars($row['start_date']) ?></td>
+                                <td class="text-center"><?= htmlspecialchars($row['seats']) ?></td>
+                                <td class="text-center">
+                                    <?php if (!empty($row['attendance_complete'])): ?>
+                                        <span class="badge bg-success">Đã điểm danh đầy đủ</span>
+                                    <?php elseif (!empty($row['attendance_summary']) && $row['attendance_summary']['total'] > 0): ?>
+                                        <span class="badge bg-warning text-dark">Chưa hoàn tất (<?= $row['attendance_summary']['total'] - ($row['attendance_summary']['present'] + $row['attendance_summary']['late']) ?> thiếu)</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">Chưa điểm danh</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-center small text-muted"><?= htmlspecialchars($row['created_at']) ?></td>
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <a href="index.php?action=departure-detail&id=<?= $row['id'] ?>" class="btn btn-sm btn-info">Chi tiết</a>
+                                        <a href="index.php?action=departure-edit&id=<?= $row['id'] ?>" class="btn btn-sm btn-warning">Sửa</a>
+                                        <a href="index.php?action=departure-delete&id=<?= $row['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('Xóa lịch trình này?')">Xóa</a>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="5" class="text-center text-muted">Chưa có dữ liệu.</td>
+                            <td colspan="7" class="text-center py-5 text-muted">Chưa có lịch khởi hành.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
     </div>
-
 </div>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>

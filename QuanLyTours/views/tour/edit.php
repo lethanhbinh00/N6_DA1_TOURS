@@ -46,6 +46,11 @@
                     </div>
 
                     <div class="col-md-12">
+                        <label class="form-label">Điểm nổi bật</label>
+                        <input type="text" name="highlight" class="form-control" value="<?= htmlspecialchars($tour['highlight']) ?>" required>
+                    </div>
+
+                    <div class="col-md-12">
                         <label class="form-label">Hình ảnh hiện tại</label><br>
                         <?php if(!empty($tour['image'])): ?>
                             <img src="public/uploads/<?= $tour['image'] ?>" height="80" class="mb-2 rounded border">

@@ -9,7 +9,9 @@ class CarBookingController
         $database = new Database();
         $db = $database->getConnection();
         $model = new CarBooking($db);
-        $bookings = $model->getAll();
+
+        $keyword = $_GET['keyword'] ?? '';
+        $carBookings = $model->getAll($keyword);
 
         require_once __DIR__ . '/../../views/car_booking/index.php';
     }
@@ -35,12 +37,23 @@ class CarBookingController
             'note' => $_POST['note']
         ];
 
+        // basic server-side validation
+        if (empty($data['service_id']) || empty($data['customer_name']) || empty($data['date'])) {
+            $_SESSION['error'] = 'Vui lòng điền đầy đủ thông tin dịch vụ, khách hàng và ngày.';
+            header('Location: index.php?action=car-booking-create');
+            exit;
+        }
+
         $database = new Database();
         $db = $database->getConnection();
         $model = new CarBooking($db);
-        $model->create($data);
-
-        header("Location: index.php?action=carbooking-list&msg=created");
+        $ok = $model->create($data);
+        if ($ok) {
+            $_SESSION['success'] = 'Đã thêm đặt xe thành công.';
+        } else {
+            $_SESSION['error'] = 'Lỗi khi thêm: ' . $model->getLastError();
+        }
+        header("Location: index.php?action=car-booking");
     }
 
     public function edit()
@@ -68,12 +81,22 @@ class CarBookingController
             'note' => $_POST['note']
         ];
 
+        if (empty($data['id'])) {
+            $_SESSION['error'] = 'ID đặt xe không hợp lệ.';
+            header('Location: index.php?action=car-booking');
+            exit;
+        }
+
         $database = new Database();
         $db = $database->getConnection();
         $model = new CarBooking($db);
-        $model->updateBooking($data);
-
-        header("Location: index.php?action=carbooking-list&msg=updated");
+        $ok = $model->updateBooking($data);
+        if ($ok) {
+            $_SESSION['success'] = 'Cập nhật đặt xe thành công.';
+        } else {
+            $_SESSION['error'] = 'Lỗi khi cập nhật: ' . $model->getLastError();
+        }
+        header("Location: index.php?action=car-booking");
     }
 
     public function delete()
@@ -82,8 +105,9 @@ class CarBookingController
         $database = new Database();
         $db = $database->getConnection();
         $model = new CarBooking($db);
-        $model->deleteBooking($id);
-
-        header("Location: index.php?action=carbooking-list&msg=deleted");
+        $ok = $model->deleteBooking($id);
+        if ($ok) $_SESSION['success'] = 'Xóa đặt xe thành công.';
+        else $_SESSION['error'] = 'Lỗi khi xóa: ' . $model->getLastError();
+        header("Location: index.php?action=car-booking");
     }
 }
