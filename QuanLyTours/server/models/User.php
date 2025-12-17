@@ -101,5 +101,25 @@ class User {
         $stmt = $this->conn->prepare("DELETE FROM users WHERE id = :id");
         return $stmt->execute([':id' => $id]);
     }
+
+    public function getAllGuides() {
+    // Lấy tất cả người dùng có trạng thái hoạt động (active)
+    // Bạn có thể lọc theo role = 'guide' hoặc lấy tất cả nhân viên tùy nhu cầu
+    $query = "SELECT id, full_name, role FROM users WHERE status = 'active'";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+// server/models/User.php
+
+public function getAllUsers() {
+    // Truy vấn lấy tất cả người dùng đang hoạt động, không phân biệt role 
+    // để đảm bảo mọi nhân sự đều có thể được phân công
+    $sql = "SELECT id, full_name, role FROM users WHERE status = 'active' ORDER BY role ASC, full_name ASC";
+    $stmt = $this->conn->prepare($sql);
+    $stmt->execute();
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 }
 ?>

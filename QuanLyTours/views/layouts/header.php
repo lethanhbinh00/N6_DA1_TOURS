@@ -123,20 +123,27 @@
                 <div class="d-flex align-items-center"><i class="fas fa-file-invoice-dollar me-2"></i> Tài chính & NCC</div>
                 <i class="fas fa-chevron-down small"></i>
             </a>
-            <div id="menu-fin" class="submenu <?= (strpos($act, 'supplier')!==false)?'show':'' ?>">
+            <div id="menu-fin" class="submenu <?= (strpos($act, 'supplier')!==false || $act=='payables')?'show':'' ?>">
                 <a href="index.php?action=supplier-list" class="nav-link">Nhà cung cấp</a>
-                <a href="#" class="nav-link">Công nợ</a>
+                <a href="index.php?action=payables" class="nav-link">Công nợ (Phải trả)</a>
             </div>
         </li>
         
         <li class="nav-item">
+            <a class="nav-link" href="#" onclick="toggleMenu('menu-report'); return false;">
+                <div class="d-flex align-items-center"><i class="fas fa-chart-line me-2"></i> Báo cáo</div>
+                <i class="fas fa-chevron-down small"></i>
+            </a>
+            <div id="menu-report" class="submenu <?= (strpos($act, 'reports-')!==false)?'show':'' ?>">
+                <a href="index.php?action=reports-profitability" class="nav-link">Báo cáo Lãi/Lỗ</a>
+                <a href="#" class="nav-link">Tỷ lệ Chuyển đổi</a>
+                <a href="#" class="nav-link">Đánh giá Dịch vụ</a>
+            </div>
+        </li>
+        <li class="nav-item">
             <a href="index.php?action=user-list" class="nav-link <?= ($act=='user-list')?'active':'' ?>">
                 <div class="d-flex align-items-center"><i class="fas fa-users-cog me-2"></i> Quản lý Tài khoản</div>
             </a>
-        </li>
-
-        <li class="nav-item">
-            <a href="#" class="nav-link"><div class="d-flex align-items-center"><i class="fas fa-chart-line me-2"></i> Báo cáo</div></a>
         </li>
     </ul>
 </div>
