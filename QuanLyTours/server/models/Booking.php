@@ -86,11 +86,6 @@ class Booking {
                 ':total'  => $data['total_price'],
                 ':note'   => $data['note'] ?? ''
             ]);
-<<<<<<< HEAD
-        } catch (Exception $e) {
-            die("Lỗi tại Model Booking: " . $e->getMessage());
-        }
-=======
             $newId = $this->conn->lastInsertId();
 
             // Auto-create a departure for this tour/date if not exists
@@ -114,7 +109,6 @@ class Booking {
 
             return $newId;
         } catch (Exception $e) { return "Error: " . $e->getMessage(); }
->>>>>>> origin/main
     }
 
     // 3. Cập nhật
