@@ -3,6 +3,7 @@
 class CarBooking
 {
     private $conn;
+    private $lastError = null;
 
     public function __construct($db = null)
     {
@@ -61,24 +62,35 @@ class CarBooking
     ======================= */
     public function create($data)
     {
-        if ($this->isDuplicate($data['service_id'], $data['date'])) {
-            return "Dịch vụ đã được đặt vào ngày này!";
+        try {
+            if ($this->isDuplicate($data['service_id'], $data['date'])) {
+                $this->lastError = 'Dịch vụ đã được đặt vào ngày này!';
+                return false;
+            }
+
+            $stmt = $this->conn->prepare(
+                "INSERT INTO car_bookings
+                 (service_id, customer_name, phone, date, quantity, note)
+                 VALUES (?, ?, ?, ?, ?, ?)"
+            );
+
+            $res = $stmt->execute([
+                $data['service_id'],
+                $data['customer_name'],
+                $data['phone'],
+                $data['date'],
+                $data['quantity'],
+                $data['note'] ?? ''
+            ]);
+            if (!$res) {
+                $err = $stmt->errorInfo();
+                $this->lastError = implode(' | ', $err);
+            }
+            return $res;
+        } catch (Exception $e) {
+            $this->lastError = $e->getMessage();
+            return false;
         }
-
-        $stmt = $this->conn->prepare(
-            "INSERT INTO car_bookings
-             (service_id, customer_name, phone, date, quantity, note)
-             VALUES (?, ?, ?, ?, ?, ?)"
-        );
-
-        return $stmt->execute([
-            $data['service_id'],
-            $data['customer_name'],
-            $data['phone'],
-            $data['date'],
-            $data['quantity'],
-            $data['note'] ?? ''
-        ]);
     }
 
     /* =======================
@@ -117,7 +129,8 @@ class CarBooking
              WHERE id=?"
         );
 
-        return $stmt->execute([
+        try {
+            $res = $stmt->execute([
             $data['service_id'],
             $data['customer_name'],
             $data['phone'],
@@ -125,7 +138,16 @@ class CarBooking
             $data['quantity'],
             $data['note'] ?? '',
             $data['id']
-        ]);
+            ]);
+            if (!$res) {
+                $err = $stmt->errorInfo();
+                $this->lastError = implode(' | ', $err);
+            }
+            return $res;
+        } catch (Exception $e) {
+            $this->lastError = $e->getMessage();
+            return false;
+        }
     }
 
     // Backwards-compatible wrapper used by controller
@@ -142,7 +164,22 @@ class CarBooking
         $stmt = $this->conn->prepare(
             "DELETE FROM car_bookings WHERE id=?"
         );
-        return $stmt->execute([$id]);
+        try {
+            $res = $stmt->execute([$id]);
+            if (!$res) {
+                $err = $stmt->errorInfo();
+                $this->lastError = implode(' | ', $err);
+            }
+            return $res;
+        } catch (Exception $e) {
+            $this->lastError = $e->getMessage();
+            return false;
+        }
+    }
+
+    public function getLastError()
+    {
+        return $this->lastError;
     }
 
     // Backwards-compatible wrapper used by controller

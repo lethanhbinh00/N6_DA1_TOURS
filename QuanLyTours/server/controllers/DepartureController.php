@@ -20,6 +20,29 @@ class DepartureController
         $keyword = $_GET['keyword'] ?? '';
         $status = $_GET['status'] ?? '';
         $departures = $this->model->getAllFiltered($keyword, $status);
+        // compute attendance completion status for each departure
+        foreach ($departures as &$d) {
+            $pid = $d['id'];
+            $passengers = $this->model->getPassengers($d['tour_id'], $d['start_date']);
+            $attendance = $this->model->getAttendance($pid);
+            $total = count($passengers);
+            $present = 0;
+            $late = 0;
+            $absent = 0;
+            foreach ($passengers as $p) {
+                $bid = $p['id'];
+                if (isset($attendance[$bid])) {
+                    $s = $attendance[$bid]['status'];
+                    if ($s == 'present') $present++;
+                    elseif ($s == 'late') $late++;
+                    else $absent++;
+                }
+            }
+            $d['attendance_summary'] = ['total' => $total, 'present' => $present, 'late' => $late, 'absent' => $absent];
+            $d['attendance_complete'] = ($total > 0 && ($present + $late) === $total);
+        }
+        unset($d);
+
         include __DIR__ . '/../../views/departures/index.php';
     }
 

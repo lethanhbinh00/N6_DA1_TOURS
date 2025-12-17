@@ -43,6 +43,7 @@
                         <th class="text-start">Tour</th>
                         <th>Ngày khởi hành</th>
                         <th>Số ghế</th>
+                        <th>Trạng thái</th>
                         <th>Ngày tạo</th>
                         <th style="width:160px;">Hành động</th>
                     </tr>
@@ -55,6 +56,15 @@
                                 <td class="text-start fw-bold"><?= htmlspecialchars($row['tour_name'] ?? 'N/A') ?></td>
                                 <td class="text-center"><?= htmlspecialchars($row['start_date']) ?></td>
                                 <td class="text-center"><?= htmlspecialchars($row['seats']) ?></td>
+                                <td class="text-center">
+                                    <?php if (!empty($row['attendance_complete'])): ?>
+                                        <span class="badge bg-success">Đã điểm danh đầy đủ</span>
+                                    <?php elseif (!empty($row['attendance_summary']) && $row['attendance_summary']['total'] > 0): ?>
+                                        <span class="badge bg-warning text-dark">Chưa hoàn tất (<?= $row['attendance_summary']['total'] - ($row['attendance_summary']['present'] + $row['attendance_summary']['late']) ?> thiếu)</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">Chưa điểm danh</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="text-center small text-muted"><?= htmlspecialchars($row['created_at']) ?></td>
                                 <td class="text-end">
                                     <div class="d-flex justify-content-end gap-2">
